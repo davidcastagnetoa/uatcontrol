@@ -1,0 +1,6 @@
+uat_login/node_modules/
+uat_login_backend/node_modules/
+uat_login_backend/.env
+uat_login/.env
+uat_login_backend/data.json
+uat_login_backend/data_example.json
