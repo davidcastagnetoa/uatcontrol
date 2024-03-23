@@ -196,10 +196,6 @@ function Login() {
                 </div>
               </div>
 
-              {/* Button to sign in with Google */}
-              {/* Usando Button component */}
-              {/* <LoginButton isLoading={isLoading} /> */}
-
               {/* Usando GoogleLogin component */}
               <LoginButton isLoading={isLoading} onGoogleSuccess={handleGoogleSuccess} />
             </div>
