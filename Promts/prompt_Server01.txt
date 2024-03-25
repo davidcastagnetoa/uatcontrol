@@ -1,0 +1,39 @@
+revisa la parte comentada de este codigo y completalo: "import express from "express";
+import { login, verifyTokenController } from "../controllers/authController.js";
+import { OAuth2Client } from "google-auth-library";
+import jwt from "jsonwebtoken";
+const { ConfidentialClientApplication } = require("@azure/msal-node");
+const router = express.Router();
+// Resto de codigo para autentificacion en Google
+//Rutas de autenticación con Microsoft
+const msalConfig = {
+  auth: {
+    clientId: "TU_CLIENT_ID", //MICROSOFT_APP_ID
+    clientSecret: "TU_CLIENT_SECRET", //MICROSOFT_APP_SECRET
+    authority: "https://login.microsoftonline.com/TU_TENANT_ID",
+  },
+};
+const pca = new ConfidentialClientApplication(msalConfig);
+router.post("/auth/microsoft", async (req, res) => {
+  const { code } = req.body; // Esperamos recibir un 'code', no un 'token'
+  console.debug("Contenido de body: " + JSON.stringify(req.body));
+  try {
+    const tokenRequest = {
+      code: code,
+      scopes: ["User.Read"],
+      redirectUri: "postmessage",
+    };
+    const response = await pca.acquireTokenByCode(tokenRequest);
+    if (response.accessToken) {
+      console.log("Access token:", response.accessToken);
+      res.json({ accessToken: response.accessToken });
+    }
+    // Completa el codigo para generar un token usando el email de Microsft del usuario y su nombre con jwt
+    // ademas debe responder en formato json con el token generado y la informacion del usuario
+  } catch (err) {
+    console.log(err);
+    res.status(500).send(err);
+  }
+});
+export default router;
+"
