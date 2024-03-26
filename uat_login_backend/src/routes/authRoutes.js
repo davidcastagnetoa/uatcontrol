@@ -90,31 +90,72 @@ const msalConfig = {
   },
 };
 
-// const pca = new ConfidentialClientApplication(msalConfig);
+const pca = new ConfidentialClientApplication(msalConfig);
+router.post("/auth/microsoft", async (req, res) => {
+  const { code } = req.body; // Esperamos recibir un 'code', no un 'token'
+  console.debug("Contenido de body: " + JSON.stringify(req.body));
+  try {
+    const tokenRequest = {
+      code: code,
+      scopes: ["User.Read"],
+      redirectUri: "postmessage", //http://localhost:3000
+    };
 
-// router.post("/auth/microsoft", async (req, res) => {
-//   const { code } = req.body; // Esperamos recibir un 'code', no un 'token'
-//   // console.debug("Contenido de body: " + JSON.stringify(req.body));
+    const response = await pca.acquireTokenByCode(tokenRequest);
+    console.debug(`Response received from token endpoint. ${response}`);
 
-//   try {
-//     const tokenRequest = {
-//       code: code,
-//       scopes: ["User.Read"],
-//       redirectUri: "postmessage",
-//     };
+    if (response.accessToken) {
+      console.log("Access token:", response.accessToken);
+      // res.redirect(`/?id_token=${response.accessToken}&state=signin`);
 
-//     const response = await pca.acquireTokenByCode(tokenRequest);
-//     if (response.accessToken) {
-//       console.log("Access token:", response.accessToken);
-//       res.json({ accessToken: response.accessToken });
-//     }
+      // Utilizar el access token para hacer una solicitud a Microsoft Graph API y obtener datos del perfil del usuario.
+      const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${response.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-//     // Completa el codigo para generar un token usando el email de Microsft del usuario y su nombre con jwt
-//     // ademas debe responder en formato json con el token generado y la informacion del usuario
-//   } catch (err) {
-//     console.log(err);
-//     res.status(500).send(err);
-//   }
-// });
+      const userData = await graphResponse.json();
+      console.debug("Datos del usuario:", JSON.stringify(userData));
+
+      const userEmail = userData.mail || userData.userPrincipalName; // Correo electrónico del usuario
+      const userName = userData.displayName;
+      // Generar el Token JWT
+      const jwtSecretKey = process.env.JWT_SECRET;
+      const userToken = jwt.sign(
+        {
+          email: userEmail,
+          name: userName,
+        },
+        jwtSecretKey,
+        {
+          expiresIn: "1h",
+        }
+      );
+      console.log("\nToken generado:", userToken);
+      res.json({
+        token: userToken,
+        user: {
+          email: userEmail,
+          name: userName,
+        },
+      });
+    } else {
+      console.error(
+        "Error en la solicitud de acceso al código, acquireTokenByCode failed! , Verifica las credenciales de Microsoft"
+      );
+      throw new Error("No hay Respuesta por parte de Microsoft Graph API");
+    }
+
+    // Completa el codigo para generar un token usando el email de Microsft del usuario y su nombre con jwt
+    // ademas debe responder en formato json con el token generado y la informacion del usuario
+  } catch (err) {
+    console.log(err);
+    console.dir(err);
+    res.status(500).send(err);
+  }
+});
 
 export default router;
