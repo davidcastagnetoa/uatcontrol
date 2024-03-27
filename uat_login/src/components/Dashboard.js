@@ -22,7 +22,7 @@ function Dashboard() {
   console.log("authState.user: ", authState.user);
   const username = authState.user ? authState.user.username : "Invitado";
   const email = authState.user ? authState.user.email : "Invitado@invitado.com";
-  const picture = authState.user ? authState.user.picture : "avatar";
+  const picture = authState.user ? authState.user.picture : "./ruta_invitado_avatar";
   console.log("Valor de username: " + username);
   console.log("Valor de email: " + email);
   console.log("Ruta de picture: " + picture);

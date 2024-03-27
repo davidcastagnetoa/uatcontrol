@@ -72,7 +72,9 @@ const AuthProvider = ({ children }) => {
     verifyToken();
   }, []);
 
-  // Función de login actualizada para almacenar el token, esta funcion comprueba en el servidor usuario y contraseña, si los datos son correctos, se trae el token que genera el servidor y devuelve el true que necesita
+  // Función de login actualizada para almacenar el token,
+  // esta funcion comprueba en el servidor usuario y contraseña, si los datos son correctos,
+  // se trae el token que genera el servidor y devuelve el true que necesita
   const login = async (username, password) => {
     console.log("Iniciando sesión,  usuario: ", username);
     try {
@@ -86,12 +88,15 @@ const AuthProvider = ({ children }) => {
         body: JSON.stringify({ username, password }),
       });
 
+      console.warn("Respuesta recibida del servidor al intentar iniciar sesión: ", response);
+
       if (!response.ok) {
         // Si el servidor responde con un código de error, manejarlo aquí
         throw new Error("Error en la respuesta del servidor");
       }
 
       const data = await response.json();
+      console.warn("Dato recibido del servidor: ", data);
 
       if (data.token) {
         // Como el servidor (login de authController.js) responde con un objeto que contiene el token
@@ -100,8 +105,11 @@ const AuthProvider = ({ children }) => {
         // dicho token (authState.status) para verificar si el usuario esta authenticado o no.
         // Ya que las rutas protegidas solo se acceden si el Contenido de authState.status es "authenticated"
 
+        const email = data?.userData.email;
+        const picture = data?.userData.picture;
+
         localStorage.setItem("token", data.token);
-        setAuthState({ status: "authenticated", user: { username }, token: data.token });
+        setAuthState({ status: "authenticated", user: { username, email, picture }, token: data.token });
         return true; // Indicar que el inicio de sesión fue exitoso
       } else {
         console.log("Token no proporcionado");

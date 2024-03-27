@@ -31,9 +31,21 @@ const initializeDatabase = () => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
-    matricula TEXT NOT NULL,
-    email TEXT NOT NULL,
-    picture TEXT NOT NULL
+    matricula TEXT,
+    email TEXT NOT NULL UNIQUE,
+    picture TEXT
+  )`);
+
+  // auth_details TEXT -- Hash de contraseña para 'local', ID de OAuth para 'google'
+  // auth_type TEXT NOT NULL,  -- Por ejemplo, 'local' o 'google'
+  // Considerar índices para auth_type si se realizan muchas consultas basadas en este campo
+
+  db.run(`CREATE TABLE IF NOT EXISTS auth_methods (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    auth_type TEXT NOT NULL,
+    auth_details TEXT,  
+    FOREIGN KEY (user_id) REFERENCES users(id)
   )`);
 
   db.run(

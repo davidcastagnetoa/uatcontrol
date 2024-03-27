@@ -3,6 +3,7 @@ import { login, verifyTokenController } from "../controllers/authController.js";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import { ConfidentialClientApplication } from "@azure/msal-node";
+import { db } from "../../utils/db.js";
 
 const router = express.Router();
 
@@ -48,26 +49,77 @@ router.post("/auth/google", async (req, res) => {
     const payload = ticket.getPayload();
     console.log(`Información del usuario: ${JSON.stringify(payload)}`);
 
-    //Genera un token usando el email de Google del usuario, el nombre y su ruta de imagen de perfil como carga util (payload)
-    const userToken = jwt.sign(
-      {
-        username: payload["name"],
-        email: payload["email"],
-        picture: payload["picture"],
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
+    // Buscar si el usuario ya existe en la base de datos por email
+    db.get(`SELECT id FROM users WHERE email = ?`, [payload["email"]], async (err, row) => {
+      if (err) {
+        console.error("Error al buscar el usuario:", err.message);
+        return res.status(500).send("Error al buscar el usuario en la base de datos");
       }
-    );
 
-    // console.debug("\nToken generado:", userToken);
-    res.json({ userToken, userInfo: payload });
+      let userId;
+      if (!row) {
+        // El usuario no existe, insértalo en users
+        await new Promise((resolve, reject) => {
+          db.run(
+            `INSERT INTO users (username, email, picture, matricula) VALUES (?, ?, ?, ?)`,
+            [payload["name"], payload["email"], payload["picture"], "AB1234"],
+            function (err) {
+              if (err) {
+                console.error("Error al insertar el usuario:", err.message);
+                reject(err);
+              } else {
+                userId = this.lastID; // Obtener el nuevo userID
+                resolve();
+              }
+            }
+          );
+        });
+
+        // Insertar en auth_methods
+        db.run(
+          `INSERT INTO auth_methods (user_id, auth_type, auth_details) VALUES (?, ?, ?)`,
+          [userId, "google", payload["sub"]], // Usar 'sub' como auth_details
+          (err) => {
+            if (err) {
+              console.error("Error al insertar método de autenticación Google:", err.message);
+              return res.status(500).send("Error al procesar el método de autenticación");
+            }
+          }
+        );
+      } else {
+        // El usuario ya existe, obtener su ID
+        userId = row.id;
+        console.debug(`El usuario ${payload["email"]} ya existe en la base de datos`);
+        console.debug(`ID del usuario: ${userId}`);
+        console.debug(`Tipo de autenticación: Google`);
+        console.debug(`Detalles de autenticación: ${payload["sub"]}`); // Usar 'sub' como auth_details
+        console.debug(`Matrícula: AB1234`);
+        console.debug(`Username: ${payload["name"]}`);
+        console.debug(`Email: ${payload["email"]}`);
+      }
+
+      // Genera un token usando el email de Google del usuario, el nombre y su ruta de imagen de perfil como carga util (payload)
+      const userToken = jwt.sign(
+        {
+          username: payload["name"],
+          email: payload["email"],
+          picture: payload["picture"],
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1h",
+        }
+      );
+
+      // console.debug("\nToken generado:", userToken)
+      res.json({ userToken, userInfo: payload });
+    });
   } catch (err) {
     console.error("Error al intercambiar el código por tokens: ", err);
     res.status(401).send("Unauthorized");
   }
 });
+
 router.post("/auth/google/refresh-token", async (req, res) => {
   try {
     const user = new UserRefreshClient(CLIENT_ID, CLIENT_SECRET, req.body.refreshToken);

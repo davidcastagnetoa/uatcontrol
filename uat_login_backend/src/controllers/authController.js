@@ -1,6 +1,7 @@
 // authController.js
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+// import { db } from "../../utils/db.js";
 
 dotenv.config();
 
@@ -8,15 +9,72 @@ dotenv.config();
 // en AuthProvider.js, y si son correctos genera y devuelve un token.
 // Si no son correctos devuelve un 401.
 export const login = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body; //Lo que enviamos desde el cliente
 
-  // Aquí verificarías contra una base de datos,
-  // para este ejemplo compararemos con las variables de entorno
+  // // Verificar el usuario en la base de datos junto con su método de autenticación local
+  // db.get(
+  //   `SELECT users.username, users.email, users.picture, auth_methods.auth_details
+  // FROM users
+  // JOIN auth_methods ON users.id = auth_methods.user_id
+  // WHERE users.username = ? AND auth_methods.auth_type = 'local'`,
+  //   [username],
+  //   (err, row) => {
+  //     if (err) {
+  //       // Manejar errores de la base de datos
+  //       return res.status(500).json({ message: "Error al consultar la base de datos" });
+  //     }
+
+  //     if (!row) {
+  //       // Usuario no encontrado o no tiene autenticación local
+  //       return res.status(401).json({ message: "Credenciales no válidas" });
+  //     }
+
+  //     // En este punto, `row.auth_details` contiene el hash de la contraseña
+  //     // Suponiendo que usas bcrypt para hashear y verificar las contraseñas
+  //     const isPasswordCorrect = bcrypt.compareSync(password, row.auth_details);
+
+  //     if (isPasswordCorrect) {
+  //       // Generar un token
+  //       const token = jwt.sign(
+  //         { username: row.username, email: row.email, picture: row.picture },
+  //         process.env.JWT_SECRET,
+  //         { expiresIn: "1h" }
+  //       );
+
+  //       // Enviar la respuesta
+  //       res.json({
+  //         token,
+  //         userData: {
+  //           username: row.username,
+  //           email: row.email,
+  //           picture: row.picture,
+  //         },
+  //       });
+  //     } else {
+  //       // Contraseña incorrecta
+  //       res.status(401).json({ message: "Credenciales no válidas" });
+  //     }
+  //   }
+  // );
+
+  // EJEMPLO DE VARIABLES DE ENTORNO
+  // Datos falsos
+  const email = "usuario@email.com";
+  const picture = "default_avatar_route.png";
+
   if (username === process.env.USER_NAME && password === process.env.USER_PASSWORD) {
     // Generar un token
-    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    // console.log("\nToken generado:", token);
-    res.json({ token });
+    // const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ username, password, email, picture }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    // console.debug("\nToken generado:", token);
+    res.json({
+      token,
+      userData: {
+        username: username,
+        email: email,
+        picture: picture,
+      },
+    });
   } else {
     // Credenciales no válidas
     res.status(401).json({ message: "Credenciales no válidas" });
@@ -30,7 +88,7 @@ export const login = async (req, res) => {
 export const verifyTokenController = (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    // console.log("Header recibido: ", authHeader);
+    // console.debug("Header recibido: ", authHeader);
     const token = authHeader && authHeader.split(" ")[1];
 
     // console.debug("TOKEN recibido en verifyTokenController: ", token);
