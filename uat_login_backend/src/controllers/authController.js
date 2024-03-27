@@ -15,7 +15,7 @@ export const login = async (req, res) => {
   if (username === process.env.USER_NAME && password === process.env.USER_PASSWORD) {
     // Generar un token
     const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    console.log("\nToken generado:", token);
+    // console.log("\nToken generado:", token);
     res.json({ token });
   } else {
     // Credenciales no válidas
@@ -30,15 +30,16 @@ export const login = async (req, res) => {
 export const verifyTokenController = (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log("Header recibido: ", authHeader);
+    // console.log("Header recibido: ", authHeader);
     const token = authHeader && authHeader.split(" ")[1];
 
-    console.warn("TOKEN recibido en verifyTokenController: ", token);
+    // console.debug("TOKEN recibido en verifyTokenController: ", token);
     if (token == null) return res.sendStatus(401);
 
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
       if (err) return res.sendStatus(403);
-      res.json({ valid: true, username: user.username, token: token });
+      console.debug("Datos de usuario encontrados en verifyTokenController: ", user);
+      res.json({ valid: true, username: user.username, email: user.email, picture: user.picture, token: token });
     });
   } catch (err) {
     console.log("Error en verifyTokenController: ", err);

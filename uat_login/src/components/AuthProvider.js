@@ -27,15 +27,19 @@ const AuthProvider = ({ children }) => {
           console.log("Respuesta recibida.");
           const data = await response.json();
           // Suponiendo que el backend responde con un campo `valid` para indicar si el token es válido
-          console.log("Respuesta del servidor:", JSON.stringify(data));
-          console.log("Nombre de usuario recibido:", JSON.stringify(data?.username));
+          console.warn("Respuesta del servidor:", JSON.stringify(data));
+          console.warn("Nombre de usuario recibido:", JSON.stringify(data?.username));
+          console.warn("Email de usuario recibido:", JSON.stringify(data?.email));
+          console.warn("Foto de perfil de usuario recibido:", JSON.stringify(data?.picture));
           console.log("Token válido:", data.valid);
 
           if (data.valid) {
             localStorage.setItem("token", data.token);
             if (data.username) {
               const username = data?.username;
-              setAuthState({ status: "authenticated", token, user: { username } });
+              const email = data?.email;
+              const picture = data?.picture;
+              setAuthState({ status: "authenticated", token, user: { username, email, picture } });
             } else {
               setAuthState({ status: "authenticated", token });
             }

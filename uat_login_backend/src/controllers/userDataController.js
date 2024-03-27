@@ -1,42 +1,59 @@
-import fs from "fs";
+import { db } from "../../utils/db.js";
 
 export const saveUserData = (req, res) => {
-  const { uatLink, uatScript, uatId } = req.body;
+  const { uatLink, uatScript, uatUsername } = req.body;
+  console.debug("Datos recibidos en body:", req.body);
+  console.debug("Datos recibidos del usuario:", req.user);
+
+  // Nombre de usuario
   const username = req.user.username;
+  console.debug("Username encontrado: ", username);
+
+  // Email de usuario
+  const email = req.user.email;
+  console.debug("Email encontrado: ", email);
+
+  // Ruta de imagen de usuario
+  const picture = req.user.picture;
+  console.debug("Imagen de Perfil: ", picture);
   const matricula = "DI4697";
-  // Lógica para leer y escribir en data.json
-  fs.readFile("data.json", "utf8", (err, dataJson) => {
+
+  // Primero, intenta obtener el user_id del usuario existente
+  db.get(`SELECT id FROM users WHERE username = ?`, [uatUsername], (err, row) => {
     if (err) {
-      console.error("Error leyendo el archivo:", err);
-      return res.status(500).send("Error al procesar los datos");
+      console.error("Error al buscar el usuario:", err.message);
+      return res.status(500).send("Error al buscar el usuario");
     }
 
-    let data;
-    try {
-      data = JSON.parse(dataJson || "{}");
-    } catch (parseError) {
-      console.error("Error al parsear el archivo JSON:", parseError);
-      return res.status(500).send("Error al procesar los datos");
+    let userId;
+    if (row) {
+      // El usuario existe, usa su id existente
+      userId = row.id;
+      insertUatCollection(userId, uatScript, uatLink);
+    } else {
+      // El usuario no existe, insértalo
+      db.run(
+        `INSERT INTO users (username, matricula, email, picture) VALUES (?, ?, ?, ?)`,
+        [uatUsername, matricula, email, picture],
+        function (err) {
+          if (err) {
+            console.error("Error al insertar el usuario:", err.message);
+            return res.status(500).send("Error al procesar los datos del usuario");
+          }
+          userId = this.lastID; // Ahora tenemos un nuevo userId
+          insertUatCollection(userId, uatScript, uatLink);
+        }
+      );
     }
+  });
 
-    // Verificar si el usuario ya existe
-    let user = data[username];
-    if (!user) {
-      // Si el usuario no existe, inicializarlo
-      user = { matricula, username, uat_collection: [] };
-      data[username] = user;
-    }
-
-    // Agregar el nuevo UAT a la colección del usuario
-    const newUat = { id: uatId, script: uatScript, link: uatLink };
-    user.uat_collection.push(newUat);
-
-    fs.writeFile("data.json", JSON.stringify(data, null, 2), (writeError) => {
-      if (writeError) {
-        console.error("Error al escribir en el archivo:", writeError);
-        return res.status(500).send("Error al guardar los datos");
+  function insertUatCollection(userId, script, link) {
+    db.run(`INSERT INTO uat_collection (user_id, script, link) VALUES (?, ?, ?)`, [userId, script, link], (err) => {
+      if (err) {
+        console.error("Error al insertar el UAT:", err.message);
+        return res.status(500).send("Error al guardar los datos del UAT");
       }
       res.json({ message: "Datos guardados" });
     });
-  });
+  }
 };

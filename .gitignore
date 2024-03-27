@@ -5,3 +5,4 @@ uat_login/.env
 uat_login_backend/data.json
 uat_login_backend/data_example.json
 Promts/
+uat_login_backend/data.sqlite3

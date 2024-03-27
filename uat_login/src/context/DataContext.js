@@ -7,7 +7,7 @@ export const DataContext = createContext();
 export const DataProvider = ({ children }) => {
   const { authState } = useContext(AuthContext);
 
-  const save = async (uatLink, uatScript) => {
+  const save = async (uatLink, uatScript, uatUsername) => {
     if (authState.status !== "authenticated") {
       throw new Error("Usuario no autenticado");
     }
@@ -15,9 +15,12 @@ export const DataProvider = ({ children }) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${authState.token}`, // asumiendo que tienes un token JWT
+        // asumiendo que tienes un token JWT
+        Authorization: `Bearer ${authState.token}`,
       },
-      body: JSON.stringify({ uatLink, uatScript }),
+      // Aqui enviamos los datos de la UAT al servidor
+      // para su tratamiento en el controlador userDataController
+      body: JSON.stringify({ uatLink, uatScript, uatUsername }),
     });
     if (!response.ok) {
       throw new Error("Error al guardar los datos. ");

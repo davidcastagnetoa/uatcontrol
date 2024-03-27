@@ -16,7 +16,8 @@ LinkKeeper es una aplicación web diseñada para permitir a los usuarios guardar
 - **Frontend:** React, Radix-ui, shadcn/ui, TailwindCSS, 
 - **Backend:** Node, Express
 - **Autenticación:** JWT (Json Web Tokens) para la gestión de sesiones y autenticación de Google.
-- **Base de Datos:** Los enlaces se almacenan en un archivo data.json en el servidor.
+- **Base de Datos:** SQLITE. Los enlaces se almacenan en un archivo data.sqlite3 en el servidor.
+
 ## Estructura
 El proyecto se divide en dos partes principales: el cliente (frontend) y el servidor (backend).
 

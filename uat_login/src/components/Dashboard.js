@@ -7,6 +7,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useToast } from "./ui/use-toast";
 import { Toaster } from "./ui/toaster";
+import { UserNav } from "./UserNav.jsx";
 
 function Dashboard() {
   const { save } = useContext(DataContext);
@@ -18,6 +19,13 @@ function Dashboard() {
   const { toast } = useToast();
 
   console.log("Valor de authState: " + JSON.stringify(authState));
+  console.log("authState.user: ", authState.user);
+  const username = authState.user ? authState.user.username : "Invitado";
+  const email = authState.user ? authState.user.email : "Invitado@invitado.com";
+  const picture = authState.user ? authState.user.picture : "avatar";
+  console.log("Valor de username: " + username);
+  console.log("Valor de email: " + email);
+  console.log("Ruta de picture: " + picture);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,7 +44,8 @@ function Dashboard() {
         setIsLoading(false);
         throw new Error("Se deben proporcionar tanto el enlace UAT como el script.");
       }
-      const saveUat = await save(uatData.uat_link, uatData.uat_script);
+      // Aqui envias los datos al servidor para almacenarlos en la base de datos
+      const saveUat = await save(uatData.uat_link, uatData.uat_script, username);
       if (saveUat) {
         console.log("Enlace guardada correctamente");
         toast({
@@ -45,6 +54,7 @@ function Dashboard() {
           // description: "",
           open: { openToaster },
         });
+        setUatData({ uat_link: "", uat_script: "" });
         setOpenToaster(true);
       } else {
         throw new Error("No hay respuesta por parte del servidor. Intente más tarde.");
@@ -69,16 +79,19 @@ function Dashboard() {
     }
   };
 
-  console.log("authState.user: ", authState.user);
-
-  const username = authState.user ? authState.user.username : "Invitado";
-  console.log("Valor de username: " + username);
-
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Bienvenido, {username}</p>
-      <button onClick={logout}>Logout</button>
+    <div className="h-full flex-1 flex-col space-y-8 p-8 flex">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Welcome back! {username}</h2>
+          <p className="text-muted-foreground">Listado de UATs</p>
+          <p className="text-muted-foreground">Email: {email} </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <UserNav />
+        </div>
+      </div>
+
       <div>
         <form onSubmit={handleSaveUat} className="flex flex-col gap-1">
           <Label>Introduce enlace de UAT</Label>
@@ -110,6 +123,7 @@ function Dashboard() {
           </button>
         </form>
       </div>
+      {/* <DataTable data={tasks} columns={columns} /> */}
       <Toaster />
     </div>
   );

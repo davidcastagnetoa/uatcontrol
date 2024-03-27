@@ -15,30 +15,30 @@ const MS_CLIENT_ID = process.env.MICROSOFT_APP_CLIENT_ID;
 const MS_CLIENT_SECRET = process.env.MICROSOFT_APP_CLIENT_SECRET;
 const MS_TENANT_ID = process.env.MICROSOFT_APP_TENANT_ID;
 
-console.debug("CLIENT_ID:", CLIENT_ID);
-console.debug("CLIENT_SECRET:", CLIENT_SECRET);
-console.debug("MS_CLIENT_ID:", MS_CLIENT_ID);
-console.debug("MS_CLIENT_SECRET:", MS_CLIENT_SECRET);
-console.debug("MS_TENANT_ID:", MS_TENANT_ID);
+// console.debug("CLIENT_ID:", CLIENT_ID);
+// console.debug("CLIENT_SECRET:", CLIENT_SECRET);
+// console.debug("MS_CLIENT_ID:", MS_CLIENT_ID);
+// console.debug("MS_CLIENT_SECRET:", MS_CLIENT_SECRET);
+// console.debug("MS_TENANT_ID:", MS_TENANT_ID);
 
 if (!CLIENT_ID) {
   console.error("Google client ID environment variable not set. Please add GOOGLE_CLIENT_ID to .env file.");
   throw new Error("Google client ID environment variable not set");
 }
 
-// ******************************
+// ********************************
 // Autenticación OAuth con Google
-// ******************************
+// ********************************
 
 const oAuth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, "postmessage"); //Verificar que es "postmessage "
-console.debug("Valor del objeto oAuth2Client: " + JSON.stringify(oAuth2Client));
+// console.debug("Valor del objeto oAuth2Client: " + JSON.stringify(oAuth2Client));
 router.post("/auth/google", async (req, res) => {
   const { code } = req.body; // Esperamos recibir un 'code', no un 'token'
-  console.debug("Contenido de body: " + JSON.stringify(req.body));
+  // console.debug("Contenido de body: " + JSON.stringify(req.body));
 
   try {
     const { tokens } = await oAuth2Client.getToken(code);
-    console.log("Tokens recibidos: ", tokens);
+    // console.debug("Tokens recibidos: ", tokens);
 
     //Este await es importante. De lo contrario la funcion getPayload no podra ser llamada
     const ticket = await oAuth2Client.verifyIdToken({
@@ -48,11 +48,12 @@ router.post("/auth/google", async (req, res) => {
     const payload = ticket.getPayload();
     console.log(`Información del usuario: ${JSON.stringify(payload)}`);
 
-    //Genera un token usando el email de Google del usuario y el nombre como carga util (payload)
+    //Genera un token usando el email de Google del usuario, el nombre y su ruta de imagen de perfil como carga util (payload)
     const userToken = jwt.sign(
       {
         username: payload["name"],
         email: payload["email"],
+        picture: payload["picture"],
       },
       process.env.JWT_SECRET,
       {
@@ -60,7 +61,7 @@ router.post("/auth/google", async (req, res) => {
       }
     );
 
-    console.log("\nToken generado:", userToken);
+    // console.debug("\nToken generado:", userToken);
     res.json({ userToken, userInfo: payload });
   } catch (err) {
     console.error("Error al intercambiar el código por tokens: ", err);
@@ -105,7 +106,7 @@ router.post("/auth/microsoft", async (req, res) => {
     console.debug(`Response received from token endpoint. ${response}`);
 
     if (response.accessToken) {
-      console.log("Access token:", response.accessToken);
+      // console.debug("Access token:", response.accessToken);
       // res.redirect(`/?id_token=${response.accessToken}&state=signin`);
 
       // Utilizar el access token para hacer una solicitud a Microsoft Graph API y obtener datos del perfil del usuario.
@@ -134,7 +135,7 @@ router.post("/auth/microsoft", async (req, res) => {
           expiresIn: "1h",
         }
       );
-      console.log("\nToken generado:", userToken);
+      // console.debug("\nToken generado:", userToken);
       res.json({
         token: userToken,
         user: {
