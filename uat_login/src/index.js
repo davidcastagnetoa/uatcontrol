@@ -1,13 +1,33 @@
+// index.js
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import "./globals.css";
 
+// Microsoft OAuth Libraries
+import { PublicClientApplication } from "@azure/msal-browser";
+import { MsalProvider } from "@azure/msal-react";
+
+// Microsoft Provider Data
+const MSClientId = process.env.REACT_APP_MICROSOFT_APP_CLIENT_ID;
+console.debug("clientID for MSalProvider is: " + MSClientId);
+
+const msalConfig = {
+  auth: {
+    clientId: MSClientId,
+    redirectUri: "http://localhost:3000/redirect/microsoft",
+  },
+};
+
+const msalInstance = new PublicClientApplication(msalConfig);
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <App />
+    <MsalProvider instance={msalInstance}>
+      <App />
+    </MsalProvider>
   </React.StrictMode>
 );
 

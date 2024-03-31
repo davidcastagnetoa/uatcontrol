@@ -1,6 +1,7 @@
 import { useGoogleLogin } from "@react-oauth/google";
 import { Button } from "./ui/button";
 import { Icons } from "./icons";
+import { FaGoogle } from "react-icons/fa";
 
 export function LoginButton({ isLoading, onGoogleSuccess }) {
   const login = useGoogleLogin({
@@ -15,8 +16,8 @@ export function LoginButton({ isLoading, onGoogleSuccess }) {
 
   return (
     // With useGoogleLogin
-    <Button variant="outline" type="button" onClick={() => login()} disabled={isLoading}>
-      {isLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.google className="mr-2 h-4 w-4" />}{" "}
+    <Button className="w-full" variant="outline" type="button" onClick={() => login()} disabled={isLoading}>
+      {isLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <FaGoogle className="mr-2 h-4 w-4" />}{" "}
       Google
     </Button>
   );

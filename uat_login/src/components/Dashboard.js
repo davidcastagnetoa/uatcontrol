@@ -1,5 +1,5 @@
 // Dashboard.js
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { DataContext } from "../context/DataContext.js";
 import AuthContext from "../context/AuthContext";
 import { useState } from "react";

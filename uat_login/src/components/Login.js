@@ -12,6 +12,7 @@ import { useToast } from "./ui/use-toast";
 import { Toaster } from "./ui/toaster";
 import { ModeToggle } from "./ToggleMode";
 import { LoginButton } from "./LoginButton";
+import { MicrosoftLogin } from "./MicrosoftLogin";
 
 function Login() {
   const { login, verifyToken } = useContext(AuthContext);
@@ -30,7 +31,7 @@ function Login() {
     }));
   };
 
-  // Usando Custom GoogleLogin  Button component
+  // Usando Custom GoogleLogin, Button component
   const handleGoogleSuccess = async (code) => {
     setIsLoading(true);
 
@@ -61,9 +62,6 @@ function Login() {
       console.log("Token de la aplicacion: " + token);
       localStorage.setItem("token", token);
 
-      // console.log("Redirigiendo a dashboard");
-      // navigate("/dashboard", { replace: true });
-
       const success = await verifyToken();
       if (success) {
         // Y redirigir al usuario al Dashboard o actualizar el estado de la aplicación según corresponda
@@ -90,6 +88,71 @@ function Login() {
       setIsLoading(false);
     }
   };
+
+  // // Usando Custom MicrosoftLogin, Button component
+  // const handleMicrosoftSuccess = async (code) => {
+  //   setIsLoading(true);
+  //   const requestBody = JSON.stringify({ code });
+  //   console.log("Body being sent to the server: ", requestBody);
+
+  //   try {
+  //     const response = await fetch("http://localhost:8080/api/auth/microsoft", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Access-Control-Allow-Origin": "*",
+  //         Accept: "*/*",
+  //       },
+  //       body: requestBody,
+  //     });
+  //     console.log("Response from the server:", response);
+
+  //     if (!response.ok) {
+  //       throw new Error(`Server responded with status: ${response.status}`);
+  //     }
+
+  //     // Espera la respuesta de tu servidor
+  //     // (por ejemplo, un token JWT para manejar la sesión)
+  //     const tokens = await response.json();
+  //     console.log("Authenticated with the server successfully:", tokens);
+
+  //     // Aquí puedes almacenar el token JWT en localStorage
+  //     // (o donde prefieras) para futuras autenticaciones
+  //     let token = tokens.userToken;
+  //     console.log("Token de la aplicacion: " + token);
+  //     localStorage.setItem("token", token);
+
+  //     // Redireccionar al Dashboard si el usuario ya estaba autenticado,
+  //     // sino volver a Mostrar el Modal para que inicie sesión
+  //     // Redireccionar al Dashboard si se ha logueado correctamente
+  //     const success = await verifyToken();
+  //     if (success) {
+  //       // Y redirigir al usuario al Dashboard o actualizar
+  //       // el estado de la aplicación según corresponda
+  //       console.log("Redirigiendo a dashboard");
+  //       navigate("/dashboard", { replace: true });
+  //     } else {
+  //       throw new Error("No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider .");
+  //     }
+  //   } catch (err) {
+  //     console.error("Ocurrió un error inesperado mientras intentabas iniciar sesión con Microsoft.", err);
+  //     const errorMessage = "Ha ocurrido un error inesperado. Por favor, intenta nuevamente más tarde." + err.message;
+  //     setError(errorMessage);
+
+  //     toast({
+  //       variant: "destructive",
+  //       title: "¡Acceso Denegado!",
+  //       description: errorMessage,
+  //       open: { openToaster },
+  //     });
+
+  //     console.warn("Toaster mostrado");
+  //     console.error(error);
+  //     setOpenToaster(true);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -196,8 +259,22 @@ function Login() {
                 </div>
               </div>
 
-              {/* Usando GoogleLogin component */}
-              <LoginButton isLoading={isLoading} onGoogleSuccess={handleGoogleSuccess} />
+              {/* OAuth Buttons (Google, Microsoft) */}
+              <div className="flex justify-between space-x-2 w-full">
+                {/* Usando GoogleLogin component */}
+                <LoginButton
+                  className="flex-1 inline-flex items-center justify-center"
+                  isLoading={isLoading}
+                  onGoogleSuccess={handleGoogleSuccess}
+                />
+
+                {/* Usando MicrosoftLogin component */}
+                <MicrosoftLogin
+                  className="flex-1 inline-flex items-center justify-center"
+                  isLoading={isLoading}
+                  // onMicrosoftSuccess={handleMicrosoftSuccess}
+                />
+              </div>
             </div>
             <p className="px-8 py-4 text-center text-sm text-muted-foreground">
               By clicking continue, you agree to our{" "}

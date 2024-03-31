@@ -60,7 +60,7 @@ const initializeDatabase = () => {
       if (err) {
         console.error("Error al crear las tablas:", err.message);
       } else {
-        console.log("Tablas creadas o ya existentes correctamente.");
+        console.debug("Tablas creadas o ya existentes correctamente.");
       }
     }
   );
