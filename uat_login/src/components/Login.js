@@ -92,7 +92,9 @@ function Login() {
   // // Usando Custom MicrosoftLogin, Button component
   // const handleMicrosoftSuccess = async (code) => {
   //   setIsLoading(true);
-  //   const requestBody = JSON.stringify({ code });
+  //   const requestBody = {
+  //     authCode: code,
+  //   };
   //   console.log("Body being sent to the server: ", requestBody);
 
   //   try {
@@ -103,7 +105,7 @@ function Login() {
   //         "Access-Control-Allow-Origin": "*",
   //         Accept: "*/*",
   //       },
-  //       body: requestBody,
+  //       body: JSON.stringify(requestBody),
   //     });
   //     console.log("Response from the server:", response);
 

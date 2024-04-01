@@ -18,8 +18,8 @@ const AuthProvider = ({ children }) => {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            // "Access-Control-Allow-Origin": "*", //AÑADIDO
-            // Accept: "*/*", //AÑADIDO
+            "Access-Control-Allow-Origin": "*", //AÑADIDO
+            Accept: "*/*", //AÑADIDO
           },
         });
 

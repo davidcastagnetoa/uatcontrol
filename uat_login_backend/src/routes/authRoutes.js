@@ -141,7 +141,6 @@ router.post("/auth/google/refresh-token", async (req, res) => {
 router.post("/auth/microsoft", async (req, res) => {
   const { authCode } = req.body;
   console.debug("authCode:", authCode);
-  // console.debug("\nContenido de body: " + JSON.stringify(req.body));
   // Aquí deberías validar el authCode con Microsoft y obtener el token de acceso
 
   // Suponiendo que ya tienes el token de acceso y el cliente de Microsoft Graph configurado
@@ -153,7 +152,7 @@ router.post("/auth/microsoft", async (req, res) => {
 
   try {
     const user = await client.api("/me").get();
-    console.log("user data  from /me endpoint: ", user);
+    console.log("user data from /me endpoint: ", user);
 
     const jwtSecretKey = process.env.JWT_SECRET;
     const userName = user.displayName;

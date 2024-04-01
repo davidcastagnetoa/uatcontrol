@@ -1,16 +1,3 @@
-// import React, { useCallback, useEffect } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { Button } from "./ui/button";
-// import { Icons } from "./icons";
-// import { FaMicrosoft } from "react-icons/fa";
-// import { PublicClientApplication, loginWithDeviceCode } from "@azure/msal-browser";
-
-// // Asumiendo que las funciones generateCodeVerifier y generateCodeChallenge ya están definidas
-// import { generateCodeVerifier, generateCodeChallenge } from "../utils/pkce";
-
-// const MS_CLIENT_ID = process.env.REACT_APP_MICROSOFT_APP_CLIENT_ID;
-// const MS_TENANT_ID = process.env.REACT_APP_MICROSOFT_APP_TENANT_ID;
-
 // // Configuración MSAL
 // const msalConfig = {
 //   auth: {
@@ -20,92 +7,45 @@
 //   },
 // };
 
-// const msalInstance = await PublicClientApplication.createPublicClientApplication(msalConfig);
-
-// export function MicrosoftLogin({ isLoading }) {
-//   const navigate = useNavigate();
-
-//   useEffect(() => {
-//     // Maneja la respuesta de redirección
-//     msalInstance
-//       .handleRedirectPromise()
-//       .then((authResponse) => {
-//         if (authResponse) {
-//           // Aquí manejas la autenticación exitosa, por ejemplo, guardando el token
-//           // y redirigiendo al usuario a otra página
-//           console.log("Autenticación exitosa con Microsoft, account:", authResponse);
-//         }
-//       })
-//       .catch(console.error);
-//   }, []);
-
-//   const login = async () => {
-//     const codeVerifier = await generateCodeVerifier();
-//     const codeChallenge = await generateCodeChallenge(codeVerifier);
-//     console.warn("CodeVerifier que se crea:", codeVerifier);
-//     console.warn("code_challenge que se genera:", codeChallenge);
-
-//     localStorage.setItem("msalCodeVerifier", codeVerifier);
-
-//     const loginRequest = {
-//       scopes: ["User.Read"],
-//       prompt: "select_account",
-//       code_challenge: codeChallenge,
-//       codeChallengeMethod: "S256",
-//     };
-
-//     console.log("Iniciando sesión en Microsoft...");
-//     console.log("Valores de loginRequest enviados en la solicitud de autorización: ", loginRequest);
-
-//     // Inicia el proceso de login
-//     msalInstance.loginRedirect(loginRequest).catch(console.error);
-//   };
-
-//   return (
-//     <Button className="w-full" variant="outline" type="button" onClick={login} disabled={isLoading}>
-//       {isLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <FaMicrosoft className="mr-2 h-4 w-4" />}{" "}
-//       Microsoft
-//     </Button>
-//   );
-// }
-
 // MicrosoftLogin.js
 import React, { useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import { Button } from "./ui/button";
+import { Icons } from "./icons";
 import { FaMicrosoft } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 export const MicrosoftLogin = ({ isLoading }) => {
   const { instance } = useMsal();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // console.log("Valor de instance en MicrosoftLogin: ", JSON.stringify(instance));
-    // Maneja la respuesta de redirección
     instance
       .handleRedirectPromise()
       .then((tokenResponse) => {
         if (tokenResponse) {
-          // Aquí manejas la autenticación exitosa, por ejemplo, guardando el token
-          // y redirigiendo al usuario a otra página
-          console.log("Autenticación exitosa con Microsoft, account:", tokenResponse);
+          const accessToken = tokenResponse.accessToken; //MALO , no se envia al servidor
+          console.log("Autenticación exitosa con Microsoft, accessToken:", accessToken);
+          // onMicrosoftSuccess && onMicrosoftSuccess(accessToken);
+          navigate("/redirect/microsoft"); // Redirige manualmente
         }
       })
       .catch((e) => {
         console.error("ERROR en MicrosoftLogin: ", e);
       });
-  }, []);
+  }, [navigate, instance]);
 
   const handleLogin = () => {
     const loginRequest = {
-      scopes: ["user.read", "email"], // Asegúrate de incluir aquí los scopes que necesitas
-      prompt: "consent", // Solicita el consentimiento explícito del usuario
+      scopes: ["user.read", "email", "profile", "openid "],
+      prompt: "consent",
     };
     instance.loginRedirect(loginRequest).catch(console.error);
   };
 
   return (
     <Button className="w-full" variant="outline" type="button" onClick={handleLogin} disabled={isLoading}>
-      {isLoading ? "Cargando..." : <FaMicrosoft className="mr-2 h-4 w-4" />}
+      {isLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <FaMicrosoft className="mr-2 h-4 w-4" />}
       Microsoft
     </Button>
   );
