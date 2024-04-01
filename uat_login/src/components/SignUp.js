@@ -13,7 +13,7 @@ import { ModeToggle } from "./ToggleMode";
 import { LoginButton } from "./LoginButton";
 import { MicrosoftLogin } from "./MicrosoftLogin";
 
-function Login() {
+function SignUp() {
   const { login, verifyToken } = useContext(AuthContext);
   const [openToaster, setOpenToaster] = useState(false);
   const [error, setError] = useState("");
@@ -88,73 +88,6 @@ function Login() {
     }
   };
 
-  // // Usando Custom MicrosoftLogin, Button component
-  // const handleMicrosoftSuccess = async (code) => {
-  //   setIsLoading(true);
-  //   const requestBody = {
-  //     authCode: code,
-  //   };
-  //   console.log("Body being sent to the server: ", requestBody);
-
-  //   try {
-  //     const response = await fetch("http://localhost:8080/api/auth/microsoft", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "Access-Control-Allow-Origin": "*",
-  //         Accept: "*/*",
-  //       },
-  //       body: JSON.stringify(requestBody),
-  //     });
-  //     console.log("Response from the server:", response);
-
-  //     if (!response.ok) {
-  //       throw new Error(`Server responded with status: ${response.status}`);
-  //     }
-
-  //     // Espera la respuesta de tu servidor
-  //     // (por ejemplo, un token JWT para manejar la sesión)
-  //     const tokens = await response.json();
-  //     console.log("Authenticated with the server successfully:", tokens);
-
-  //     // Aquí puedes almacenar el token JWT en localStorage
-  //     // (o donde prefieras) para futuras autenticaciones
-  //     let token = tokens.userToken;
-  //     console.log("Token de la aplicacion: " + token);
-  //     localStorage.setItem("token", token);
-
-  //     // Redireccionar al Dashboard si el usuario ya estaba autenticado,
-  //     // sino volver a Mostrar el Modal para que inicie sesión
-  //     // Redireccionar al Dashboard si se ha logueado correctamente
-  //     const success = await verifyToken();
-  //     if (success) {
-  //       // Y redirigir al usuario al Dashboard o actualizar
-  //       // el estado de la aplicación según corresponda
-  //       console.log("Redirigiendo a dashboard");
-  //       navigate("/dashboard", { replace: true });
-  //     } else {
-  //       throw new Error("No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider .");
-  //     }
-  //   } catch (err) {
-  //     console.error("Ocurrió un error inesperado mientras intentabas iniciar sesión con Microsoft.", err);
-  //     const errorMessage = "Ha ocurrido un error inesperado. Por favor, intenta nuevamente más tarde." + err.message;
-  //     setError(errorMessage);
-
-  //     toast({
-  //       variant: "destructive",
-  //       title: "¡Acceso Denegado!",
-  //       description: errorMessage,
-  //       open: { openToaster },
-  //     });
-
-  //     console.warn("Toaster mostrado");
-  //     console.error(error);
-  //     setOpenToaster(true);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
@@ -192,26 +125,18 @@ function Login() {
 
   return (
     <div className="w-full h-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
-      <div className="hidden bg-muted lg:block">
-        <img
-          src="https://www.securitasdirect.es/sites/es/files/flmngr/evolutiva/securitas-direct-central-receptora-alarmas-footer.jpg"
-          alt="Image"
-          width="1920"
-          height="1080"
-          className="h-full w-full object-cover dark:brightness-[0.4] dark:grayscale"
-        />
-      </div>
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
           <ModeToggle />
           <div className="grid gap-2 text-center">
-            <h1 className="text-3xl font-bold">Login</h1>
-            <p className="text-balance text-muted-foreground">Accede con tu usuario o matrícula</p>
+            <h1 className="text-3xl font-bold">Sign Up</h1>
+            <p className="text-balance text-muted-foreground">Introduce tus datos para crear una cuenta</p>
           </div>
           {/* Form to handle user submission */}
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
               <div className="grid gap-2">
+                {/* Label and Input for Email */}
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="username"
@@ -225,21 +150,42 @@ function Login() {
                   autoCorrect="off"
                   disabled={isLoading}
                 />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  {/* Label and Input for password */}
-                  <Label htmlFor="password">Password</Label>
-                  <Link to="/forgot-password" className="ml-auto inline-block text-sm underline">
-                    Forgot your password?
-                  </Link>
-                </div>
+                {/* Label and Input for matricula */}
+                <Label htmlFor="text">Matrícula</Label>
+                <Input
+                  id="username"
+                  name="username"
+                  value={credentials.username}
+                  onChange={handleChange}
+                  placeholder="Email o matrícula"
+                  type="text"
+                  autoCapitalize="none"
+                  autoComplete="text"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                />
+                {/* Label and Input for password */}
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   name="password"
                   value={credentials.password}
                   onChange={handleChange}
-                  placeholder="Contraseña"
+                  placeholder="Elige contraseña"
+                  type="password"
+                  autoCapitalize="none"
+                  autoComplete="password"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                />
+                {/* Label and Input for confirm password */}
+                <Label htmlFor="password">Confirm Password</Label>
+                <Input
+                  id="confirm_password"
+                  name="confirm_password"
+                  value={credentials.password}
+                  onChange={handleChange}
+                  placeholder="Confirma Contraseña"
                   type="password"
                   autoCapitalize="none"
                   autoComplete="password"
@@ -250,7 +196,7 @@ function Login() {
               {/* Button to submit the form */}
               <Button disabled={isLoading} type="submit">
                 {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
-                Sign In
+                Sign Up
               </Button>
             </div>
           </form>
@@ -279,9 +225,9 @@ function Login() {
           </div>
 
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link to="/signup" className="underline">
-              Sign up
+            Already have an account?{" "}
+            <Link to="/login" className="underline">
+              Login
             </Link>
             <p className="px-8 py-4 text-center text-sm text-muted-foreground">
               By clicking continue, you agree to our{" "}
@@ -298,8 +244,18 @@ function Login() {
         </div>
         <Toaster />
       </div>
+
+      <div className="hidden bg-muted lg:block">
+        <img
+          src="https://www.securitasdirect.es/sites/es/files/flmngr/evolutiva/securitas-direct-central-receptora-alarmas-footer.jpg"
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.4] dark:grayscale"
+        />
+      </div>
     </div>
   );
 }
 //
-export default Login;
+export default SignUp;

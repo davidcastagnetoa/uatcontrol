@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Login from "./components/Login";
+import SignUp from "./components/SignUp";
 import AuthProvider from "./components/AuthProvider";
 import Dashboard from "./components/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -23,6 +24,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
                 <Route path="/redirect/microsoft" element={<MicrosoftAuthRedirect />} />
                 <Route
                   path="/dashboard"
