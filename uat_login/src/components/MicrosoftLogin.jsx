@@ -70,17 +70,37 @@
 // }
 
 // MicrosoftLogin.js
-import React from "react";
+import React, { useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import { Button } from "./ui/button";
 import { FaMicrosoft } from "react-icons/fa";
 
 export const MicrosoftLogin = ({ isLoading }) => {
   const { instance } = useMsal();
-  console.log("Valor de instance en MicrosoftLogin: ", JSON.stringify(instance));
+
+  useEffect(() => {
+    // console.log("Valor de instance en MicrosoftLogin: ", JSON.stringify(instance));
+    // Maneja la respuesta de redirección
+    instance
+      .handleRedirectPromise()
+      .then((tokenResponse) => {
+        if (tokenResponse) {
+          // Aquí manejas la autenticación exitosa, por ejemplo, guardando el token
+          // y redirigiendo al usuario a otra página
+          console.log("Autenticación exitosa con Microsoft, account:", tokenResponse);
+        }
+      })
+      .catch((e) => {
+        console.error("ERROR en MicrosoftLogin: ", e);
+      });
+  }, []);
 
   const handleLogin = () => {
-    instance.loginRedirect();
+    const loginRequest = {
+      scopes: ["user.read", "email"], // Asegúrate de incluir aquí los scopes que necesitas
+      prompt: "consent", // Solicita el consentimiento explícito del usuario
+    };
+    instance.loginRedirect(loginRequest).catch(console.error);
   };
 
   return (

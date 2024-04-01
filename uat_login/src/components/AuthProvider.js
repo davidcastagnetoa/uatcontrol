@@ -18,6 +18,8 @@ const AuthProvider = ({ children }) => {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
+            // "Access-Control-Allow-Origin": "*", //AÑADIDO
+            // Accept: "*/*", //AÑADIDO
           },
         });
 
@@ -84,6 +86,8 @@ const AuthProvider = ({ children }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*", //AÑADIDO
+          Accept: "*/*", //AÑADIDO
         },
         body: JSON.stringify({ username, password }),
       });

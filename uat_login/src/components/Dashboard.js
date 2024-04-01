@@ -23,9 +23,9 @@ function Dashboard() {
   const username = authState.user ? authState.user.username : "Invitado";
   const email = authState.user ? authState.user.email : "Invitado@invitado.com";
   const picture = authState.user ? authState.user.picture : "./ruta_invitado_avatar";
-  console.log("Valor de username: " + username);
-  console.log("Valor de email: " + email);
-  console.log("Ruta de picture: " + picture);
+  // console.log("Valor de username: " + username);
+  // console.log("Valor de email: " + email);
+  // console.log("Ruta de picture: " + picture);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

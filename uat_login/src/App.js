@@ -8,6 +8,7 @@ import { ThemeProvider } from "./context/ThemeProvider";
 import { DataProvider } from "./context/DataContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { MicrosoftAuthRedirect } from "./components/MicrosoftAuthRedirect";
+// import MicrosoftAuthRedirect from "./components/MicrosoftAuthRedirect";
 
 // Google Provider Data
 const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;

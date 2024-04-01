@@ -97,7 +97,8 @@ export const verifyTokenController = (req, res) => {
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
       if (err) return res.sendStatus(403);
       console.debug("Datos de usuario encontrados en verifyTokenController: ", user);
-      res.json({ valid: true, username: user.username, email: user.email, picture: user.picture, token: token });
+      const username = user.username || user.name;
+      res.json({ valid: true, username: username, email: user.email, picture: user.picture, token: token });
     });
   } catch (err) {
     console.log("Error en verifyTokenController: ", err);

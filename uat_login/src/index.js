@@ -11,16 +11,22 @@ import { MsalProvider } from "@azure/msal-react";
 
 // Microsoft Provider Data
 const MSClientId = process.env.REACT_APP_MICROSOFT_APP_CLIENT_ID;
+const MS_TENANT_ID = process.env.REACT_APP_MICROSOFT_APP_TENANT_ID;
+
 console.debug("clientID for MSalProvider is: " + MSClientId);
+console.debug("MS_TENANT_ID for MSalProvider is: " + MS_TENANT_ID);
 
 const msalConfig = {
   auth: {
     clientId: MSClientId,
+    authority: `https://login.microsoftonline.com/${MS_TENANT_ID}`,
     redirectUri: "http://localhost:3000/redirect/microsoft",
+    postLogoutRedirectUri: "/",
   },
 };
 
 const msalInstance = new PublicClientApplication(msalConfig);
+await msalInstance.initialize();
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(

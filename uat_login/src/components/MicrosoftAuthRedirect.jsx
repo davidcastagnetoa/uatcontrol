@@ -1,4 +1,4 @@
-// // En algún componente de React que maneja la redirección después del login con Microsoft
+// // MicrosoftAuthRedirect.jsx
 // import React, { useEffect } from "react";
 // import { useNavigate } from "react-router-dom";
 
@@ -21,6 +21,8 @@
 //         method: "POST",
 //         headers: {
 //           "Content-Type": "application/json",
+//           "Access-Control-Allow-Origin": "*", //AÑADIDO
+//           Accept: "*/*", //AÑADIDO
 //         },
 //         body: JSON.stringify({ code, codeVerifier }),
 //       })
@@ -57,12 +59,13 @@
 
 // export default MicrosoftAuthRedirect;
 
-// MicrosoftAuthRedirect.jsx
 import React, { useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
+import { useNavigate } from "react-router-dom";
 
 export const MicrosoftAuthRedirect = () => {
   const { accounts, instance } = useMsal();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (accounts.length > 0) {
@@ -73,6 +76,14 @@ export const MicrosoftAuthRedirect = () => {
           account: account,
         })
         .then((response) => {
+          // Prepara los datos a enviar
+          const requestBody = {
+            authCode: response.accessToken,
+          };
+
+          // Imprime los datos que se enviarán en la consola
+          console.log("Enviando datos al servidor:", requestBody);
+
           fetch("http://localhost:8080/api/auth/microsoft", {
             method: "POST",
             headers: {
@@ -80,16 +91,23 @@ export const MicrosoftAuthRedirect = () => {
               "Access-Control-Allow-Origin": "*",
               Accept: "*/*",
             },
-            body: JSON.stringify({ authCode: response.accessToken }),
+            body: JSON.stringify(requestBody),
           })
             .then((res) => res.json())
             .then((data) => {
               // Manejar la respuesta del servidor aquí
               console.log("Datos recibidos del servidor de la Aplicacion: ", data);
+              console.info("Token: ", data.token);
+              console.info("Login exitoso!");
+              localStorage.setItem("token", data.token);
+              // navigate("/dashboard");
             });
         });
     }
-  }, [accounts, instance]);
+    // Descomenta las siguientes líneas si necesitas verificar los valores de `accounts` y `instance`
+    // console.warn("MicrosoftAuthRedirect.jsx accounts: ", JSON.stringify(accounts));
+    // console.warn("MicrosoftAuthRedirect.jsx instance: ", JSON.stringify(instance));
+  }, [accounts, instance, navigate]);
 
   return <div>Autenticando con Microsoft...</div>;
 };

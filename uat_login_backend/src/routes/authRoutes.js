@@ -138,108 +138,10 @@ router.post("/auth/google/refresh-token", async (req, res) => {
 // ******************************
 //
 
-// // Autenticación con Microsoft
-// const msalConfig = {
-//   auth: {
-//     clientId: MS_CLIENT_ID,
-//     clientSecret: MS_CLIENT_SECRET,
-//     authority: `https://login.microsoftonline.com/${MS_TENANT_ID}/oauth2/v2.0/token`,
-//     grant_type: "authorization_code",
-//     // authority: `https://${MS_TENANT_ID}.ciamlogin.com/`,
-//   },
-// };
-
-// const pca = new ConfidentialClientApplication(msalConfig);
-
-// router.post("/auth/microsoft", async (req, res) => {
-//   console.info("\nIniciando peticion de autenticacion a Microsoft...");
-//   const { code, codeVerifier } = req.body; // Esperamos recibir un 'code', no un 'token'
-//   console.debug("\nContenido de body: " + JSON.stringify(req.body));
-//   const code_verifier = codeVerifier;
-
-//   try {
-//     const tokenRequest = {
-//       code,
-//       scopes: ["https://graph.microsoft.com/User.Read"],
-//       redirectUri: "http://localhost:3000/redirect/microsoft",
-//       code_verifier, // Añadido code_verifier en la solicitud de token
-//       grant_type: "authorization_code",
-//     };
-
-//     console.debug("\nThe tokenRequest object: ", tokenRequest);
-
-//     const response = await pca.acquireTokenByCode(tokenRequest);
-//     console.debug(`Response received from token endpoint using pca: ${response}`);
-
-//     const homeAccountId = response.account.homeAccountId;
-//     console.debug("The homeAccountId object: ", homeAccountId);
-
-//     res.json(response);
-
-//     // if (response) {
-//     //   console.debug("Access token:", response.accessToken);
-//     //   res.redirect(`/?id_token=${response.accessToken}&state=signin`);
-
-//     //   // Utilizar el access token para hacer una solicitud a
-//     //   // Microsoft Graph API y obtener datos del perfil del usuario.
-//     //   const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
-//     //     method: "GET",
-//     //     headers: {
-//     //       Authorization: `Bearer ${response.accessToken}`,
-//     //       "Content-Type": "application/json",
-//     //     },
-//     //   });
-
-//     //   if (!graphResponse.ok) {
-//     //     throw new Error("Error fetching user data from Microsoft Graph");
-//     //   }
-
-//     //   const userData = await graphResponse.json();
-//     //   console.debug("Datos del usuario:", JSON.stringify(userData));
-
-//     //   const userEmail = userData.mail || userData.userPrincipalName || userData.email || "Revisa userData"; // Correo electrónico del usuario
-//     //   const userName = userData?.displayName;
-
-//     //   // Ahora generas un JWT con la información del usuario
-//     //   const jwtSecretKey = process.env.JWT_SECRET;
-//     //   const userToken = jwt.sign(
-//     //     {
-//     //       email: userEmail,
-//     //       name: userName,
-//     //     },
-//     //     jwtSecretKey,
-//     //     {
-//     //       expiresIn: "1h",
-//     //     }
-//     //   );
-//     //   console.debug("\nToken generado:", userToken);
-
-//     //   res.json({
-//     //     token: userToken,
-//     //     user: {
-//     //       email: userEmail,
-//     //       name: userName,
-//     //     },
-//     //   });
-//     // } else {
-//     //   console.log(
-//     //     "Error en la solicitud de acceso al código, acquireTokenByCode failed! , Verifica las credenciales de Microsoft"
-//     //   );
-//     //   throw new Error("No hay Respuesta por parte de Microsoft Graph API");
-//     // }
-//   } catch (err) {
-//     console.log(err);
-//     res.status(500).send(err);
-//   }
-// });
-
-// *************
-// Experimental
-// *************
-
-router.post("/api/auth/microsoft", async (req, res) => {
+router.post("/auth/microsoft", async (req, res) => {
   const { authCode } = req.body;
   console.debug("authCode:", authCode);
+  // console.debug("\nContenido de body: " + JSON.stringify(req.body));
   // Aquí deberías validar el authCode con Microsoft y obtener el token de acceso
 
   // Suponiendo que ya tienes el token de acceso y el cliente de Microsoft Graph configurado
@@ -251,17 +153,36 @@ router.post("/api/auth/microsoft", async (req, res) => {
 
   try {
     const user = await client.api("/me").get();
-    const token = jwt.sign({ user: user.displayName }, process.env.JWT_SECRET);
+    console.log("user data  from /me endpoint: ", user);
+
+    const jwtSecretKey = process.env.JWT_SECRET;
+    const userName = user.displayName;
+    const userEmail = user.mail || user.userPrincipalName;
+
+    console.log("user email:", userEmail);
+    console.log("user name:", userName);
+
+    const userToken = jwt.sign(
+      {
+        email: userEmail,
+        username: userName,
+      },
+      jwtSecretKey,
+      {
+        expiresIn: "1h",
+      }
+    );
+    console.debug("\nToken generado:", userToken);
 
     res.json({
-      token,
+      token: userToken,
       user: {
-        name: user.displayName,
-        email: user.mail || user.userPrincipalName,
-        profileImage: user.photo, // Necesitarás un endpoint adicional para obtener la foto
+        email: userEmail,
+        username: userName,
       },
     });
   } catch (error) {
+    console.log(error);
     res.status(500).send(error);
   }
 });
