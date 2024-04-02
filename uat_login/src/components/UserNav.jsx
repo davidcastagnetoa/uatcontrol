@@ -30,8 +30,8 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-11 w-11">
-            {/* {authState.user ? <AvatarImage src={picture} alt="@shadcn" /> : <AvatarImage src={picture} alt="@shadcn" />} */}
-            <AvatarImage src={picture} alt="@shadcn" />
+            {authState.user ? <AvatarImage src={picture} alt="@shadcn" /> : <AvatarImage src={picture} alt="@shadcn" />}
+            {/* <AvatarImage src={picture} alt="@shadcn" /> */}
             <AvatarFallback>USER</AvatarFallback>
           </Avatar>
         </Button>

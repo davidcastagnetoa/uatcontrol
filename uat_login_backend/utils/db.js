@@ -27,6 +27,7 @@ const db = new sqlite3.Database(databasePath, sqlite3.OPEN_READWRITE | sqlite3.O
   }
 });
 
+// Iniciar la base de datos y crear las tablas si no existen.
 const initializeDatabase = () => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,6 +67,7 @@ const initializeDatabase = () => {
   );
 };
 
+// Cerrar la base de datos.
 const closeDatabase = () => {
   db.close((err) => {
     if (err) {
@@ -76,4 +78,50 @@ const closeDatabase = () => {
   });
 };
 
-export { db, initializeDatabase, closeDatabase };
+// Buscar un usuario por email.
+const searchUser = (email) => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, row) => {
+      if (err) {
+        console.error("Error al buscar el usuario:", err.message);
+        reject(err);
+      } else {
+        resolve(row);
+      }
+    });
+  });
+};
+
+// Inserta un nuevo usuario en la BD.
+const insertUser = (userName, userEmail, userPicture, userMatricula) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO users (username, email, picture, matricula) VALUES (?, ?, ?, ?)`,
+      [userName, userEmail, userPicture, userMatricula],
+      function (err) {
+        if (err) {
+          console.error("Error al insertar el usuario:", err.message);
+          reject(err);
+        } else {
+          resolve(this.lastID);
+        }
+      }
+    );
+  });
+};
+
+// Extraer las UAT del usuario
+const getUserUAT = (userId) => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT * FROM uat_collection WHERE user_id = ?`, [userId], (err, rows) => {
+      if (err) {
+        console.error("Error al obtener las UAT:", err.message);
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+};
+
+export { db, initializeDatabase, closeDatabase, searchUser, insertUser, getUserUAT };

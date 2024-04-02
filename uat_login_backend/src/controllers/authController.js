@@ -2,7 +2,7 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import { db } from "../../utils/db.js";
+import { db, searchUser, insertUser } from "../../utils/db.js";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { OAuth2Client } from "google-auth-library";
 
@@ -218,7 +218,8 @@ export const signup = async (req, res) => {
 // despues en auth_methods, Si ya existe obtiene su ID en la DB y responde con un token y los datos del usuario.
 // Si la identidad es incorrecta devuevle un 401, Si no se puede guardar en la DB, devuelve un 500
 export const loginWithMicrosoft = async (req, res) => {
-  const { authCode } = req.body;
+  const { authCode } = req.body; // Esperamos recibir un 'authCode', no un 'token'
+  let payload;
 
   const client = Client.init({
     authProvider: (done) => {
@@ -227,91 +228,71 @@ export const loginWithMicrosoft = async (req, res) => {
   });
 
   try {
-    const user = await client.api("/me").get();
-    console.log("user data from /me endpoint: ", user);
-
-    const jwtSecretKey = process.env.JWT_SECRET;
-    const userName = user.displayName;
-    const userID = user.id;
-    const userEmail = user.mail || user.userPrincipalName;
-    const userPicture = "/ruta_por_defecto"; //EN DESARROLLO
-
-    console.log("user email:", userEmail);
-    console.log("user name:", userName);
-
-    // Buscar si el usuario ya existe en la base de datos por email
-    db.get(`SELECT id FROM users WHERE email = ?`, userEmail, async (err, row) => {
-      if (err) {
-        console.error("Error al buscar el usuario:", err.message);
-        return res.status(500).send("Error al buscar el usuario en la base de datos");
-      }
-
-      let userId;
-      if (!row) {
-        // El usuario no existe, insértalo en users
-        await new Promise((resolve, reject) => {
-          db.run(
-            `INSERT INTO users (username, email, picture, matricula) VALUES (?, ?, ?, ?)`,
-            [userName, userEmail, userPicture, "AB1234"],
-            function (err) {
-              if (err) {
-                console.error("Error al insertar el usuario:", err.message);
-                reject(err);
-              } else {
-                userId = this.lastID; // Obtener el nuevo userID
-                resolve();
-              }
-            }
-          );
-        });
-
-        // Insertar en auth_methods
-        db.run(
-          `INSERT INTO auth_methods (user_id, auth_type, auth_details) VALUES (?, ?, ?)`,
-          [userId, "microsoft", userID], // Usar 'id' como auth_details
-          (err) => {
-            if (err) {
-              console.error("Error al insertar método de autenticación Microsoft:", err.message);
-              return res.status(500).send("Error al procesar el método de autenticación");
-            }
-          }
-        );
-      } else {
-        // El usuario ya existe, obtener su ID
-        userId = row.id;
-        console.debug(`El usuario ${userEmail} ya existe en la base de datos`);
-        console.debug(`ID del usuario: ${userId}`);
-        console.debug(`Tipo de autenticación: Microsoft`);
-        console.debug(`Detalles de autenticación: ${userID}`); // Usar 'id' como auth_details
-        console.debug(`Matrícula: AB1234`);
-        console.debug(`Username: ${userName}`);
-        console.debug(`Email: ${userEmail}`);
-      }
-
-      const userToken = jwt.sign(
-        {
-          email: userEmail,
-          username: userName,
-          picture: userPicture,
-        },
-        jwtSecretKey,
-        {
-          expiresIn: "1h",
-        }
-      );
-      console.debug("\nToken generado:", userToken);
-
-      res.json({
-        token: userToken,
-        user: {
-          email: userEmail,
-          username: userName,
-        },
-      });
-    });
+    console.debug("\n...:: Ejecutando try principal ::...");
+    console.debug("...:: Autentificando usuario con Microsoft ::...");
+    const ticket = await client.api("/me");
+    payload = await ticket.get();
   } catch (error) {
     console.log(error);
     res.status(401).send("Unauthorized");
+  }
+
+  try {
+    console.debug("\n...:: Ejecutando siguiente try ::...");
+    // let { displayName: userName, userPrincipalName: userEmail } = payload;
+
+    let userName = payload.displayName;
+    let userEmail = payload.mail || payload.userPrincipalName;
+    let userMatricula = "unregistered";
+    let userPicture = "/default_avatar_route.png"; // EN DESARROLLO
+
+    console.debug("Contenido de payload de Microsoft: ", payload);
+
+    // Buscamos al usuario en la base de datos por email de Microsoft
+    let row = await searchUser(userEmail);
+
+    if (!row) {
+      // Usuario de Microsoft no existe, insertamos al nuevo usuario
+      const userId = await insertUser(userName, userEmail, userPicture, userMatricula);
+      console.log(`Usuario nuevo insertado con ID: ${userId}`);
+    } else {
+      // Usuario de Microsoft ya existe, actualizar variables con datos de `row`
+      console.debug("Usuario encontrado, valores de row: ", row);
+
+      userName = row.username;
+      userMatricula = row.matricula;
+      userEmail = row.email;
+      userPicture = row.picture;
+    }
+
+    // Generamos un token JWT
+    const userToken = jwt.sign(
+      {
+        username: userName,
+        email: userEmail,
+        picture: userPicture,
+        matricula: userMatricula,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    console.debug("\nToken generado:", userToken);
+
+    res.json({
+      token: userToken,
+      user: {
+        username: userName,
+        email: userEmail,
+        picture: userPicture,
+        matricula: userMatricula,
+      },
+    });
+  } catch (err) {
+    console.error("Error al manejar la base de datos: ", err);
+    return res.status(500).send("Internal Server Error");
   }
 };
 
@@ -325,88 +306,75 @@ export const loginWithMicrosoft = async (req, res) => {
 // Si la identidad es incorrecta devuevle un 401, Si no se puede guardar en la DB, devuelve un 500
 export const loginWithGoogle = async (req, res) => {
   const { code } = req.body; // Esperamos recibir un 'code', no un 'token'
-  // console.debug("Contenido de body: " + JSON.stringify(req.body));
+  const { tokens } = await oAuth2Client.getToken(code);
+  // console.debug("Tokens recibidos: ", tokens);
+  let payload;
 
   try {
-    const { tokens } = await oAuth2Client.getToken(code);
-    // console.debug("Tokens recibidos: ", tokens);
-
+    console.debug("...:: Ejecutando try principal ::...");
+    console.debug("...:: Autentificando usuario con Google ::...");
     //Este await es importante. De lo contrario la funcion getPayload no podra ser llamada
     const ticket = await oAuth2Client.verifyIdToken({
       idToken: tokens.id_token,
       audience: CLIENT_ID,
     });
-    const payload = ticket.getPayload();
-    // console.log(`Información del usuario: ${JSON.stringify(payload)}`);
 
-    // Buscar si el usuario ya existe en la base de datos por email
-    db.get(`SELECT id FROM users WHERE email = ?`, [payload["email"]], async (err, row) => {
-      if (err) {
-        console.error("Error al buscar el usuario:", err.message);
-        return res.status(500).send("Error al buscar el usuario en la base de datos");
-      }
-
-      let userId;
-      if (!row) {
-        // El usuario no existe, insértalo en users
-        await new Promise((resolve, reject) => {
-          db.run(
-            `INSERT INTO users (username, email, picture, matricula) VALUES (?, ?, ?, ?)`,
-            [payload["name"], payload["email"], payload["picture"], "AB1234"],
-            function (err) {
-              if (err) {
-                console.error("Error al insertar el usuario:", err.message);
-                reject(err);
-              } else {
-                userId = this.lastID; // Obtener el nuevo userID
-                resolve();
-              }
-            }
-          );
-        });
-
-        // Insertar en auth_methods
-        db.run(
-          `INSERT INTO auth_methods (user_id, auth_type, auth_details) VALUES (?, ?, ?)`,
-          [userId, "google", payload["sub"]], // Usar 'sub' como auth_details
-          (err) => {
-            if (err) {
-              console.error("Error al insertar método de autenticación Google:", err.message);
-              return res.status(500).send("Error al procesar el método de autenticación");
-            }
-          }
-        );
-      } else {
-        // El usuario ya existe, obtener su ID
-        userId = row.id;
-        console.debug(`El usuario ${payload["email"]} ya existe en la base de datos`);
-        console.debug(`ID del usuario: ${userId}`);
-        console.debug(`Tipo de autenticación: Google`);
-        console.debug(`Detalles de autenticación: ${payload["sub"]}`); // Usar 'sub' como auth_details
-        console.debug(`Matrícula: AB1234`);
-        console.debug(`Username: ${payload["name"]}`);
-        console.debug(`Email: ${payload["email"]}`);
-      }
-
-      // Genera un token usando el email de Google del usuario, el nombre y su ruta de imagen de perfil como carga util (payload)
-      const userToken = jwt.sign(
-        {
-          username: payload["name"],
-          email: payload["email"],
-          picture: payload["picture"],
-        },
-        process.env.JWT_SECRET,
-        {
-          expiresIn: "1h",
-        }
-      );
-
-      // console.debug("\nToken generado:", userToken)
-      res.json({ userToken, userInfo: payload });
-    });
+    payload = ticket.getPayload();
+    console.debug(`\nInformación del usuario en controlador de Google: ${JSON.stringify(payload)}`);
   } catch (err) {
     console.error("Error al intercambiar el código por tokens: ", err);
     res.status(401).send("Unauthorized");
+  }
+
+  try {
+    console.debug("\n...:: Ejecutando siguiente try ::...");
+    let { name: userName, email: userEmail, picture: userPicture } = payload;
+    let userMatricula = "unregistered";
+
+    // Buscamos al usuario en la base de datos por email de Google
+    let row = await searchUser(userEmail);
+
+    if (!row) {
+      // Usuario de Google no existe, insertamos al nuevo usuario
+      const userId = await insertUser(userName, userEmail, userPicture, userMatricula);
+      console.log(`Usuario nuevo insertado con ID: ${userId}`);
+    } else {
+      // Usuario de Google ya existe, actualizar variables con datos de `row`
+      console.debug("Usuario encontrado, valores de row: ", row);
+
+      userName = row.username;
+      userMatricula = row.matricula;
+      userEmail = row.email;
+      userPicture = row.picture;
+    }
+
+    // Generamos un token JWT
+    const userToken = jwt.sign(
+      {
+        username: userName,
+        email: userEmail,
+        picture: userPicture,
+        matricula: userMatricula,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    console.debug("\nToken generado:", userToken);
+    res.json({
+      userToken,
+      userInfo: {
+        username: userName,
+        email: userEmail,
+        picture: userPicture,
+        matricula: userMatricula,
+      },
+    });
+  } catch (err) {
+    console.error("Error al manejar la base de datos: ", err);
+    return res.status(500).send("Internal Server Error");
   }
 };
 
