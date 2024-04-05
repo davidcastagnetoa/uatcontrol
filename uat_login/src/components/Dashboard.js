@@ -318,24 +318,24 @@ function Dashboard() {
                 {/* TARJETA 1 */}
                 <Card className="sm:col-span-2">
                   <CardHeader className="pb-3">
-                    <CardTitle>Your Orders</CardTitle>
+                    <CardTitle>Permisos de usuarios</CardTitle>
                     <CardDescription className="max-w-lg text-balance leading-relaxed">
-                      Introducing Our Dynamic Orders Dashboard for Seamless Management and Insightful Analysis.
+                      Modifica aqui los permisos de los usuarios registrados y las UATs a las que tienen acceso.
                     </CardDescription>
                   </CardHeader>
                   <CardFooter>
-                    <Button>Create New Order</Button>
+                    <Button>Modificar Permisos</Button>
                   </CardFooter>
                 </Card>
 
                 {/* TARJETA 2 */}
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>This Week</CardDescription>
-                    <CardTitle className="text-4xl">$1329</CardTitle>
+                    <CardDescription>UATs en desarrollo</CardDescription>
+                    <CardTitle className="text-4xl">1</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-xs text-muted-foreground">+25% from last week</div>
+                    <div className="text-xs text-muted-foreground">15% En desarrollo</div>
                   </CardContent>
                   <CardFooter>
                     <Progress value={25} aria-label="25% increase" />
@@ -345,11 +345,11 @@ function Dashboard() {
                 {/* TARJETA 3 */}
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>This Month</CardDescription>
-                    <CardTitle className="text-3xl">$5,329</CardTitle>
+                    <CardDescription>UATs en producción</CardDescription>
+                    <CardTitle className="text-3xl">4</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-xs text-muted-foreground">+10% from last month</div>
+                    <div className="text-xs text-muted-foreground">85% En producción</div>
                   </CardContent>
                   <CardFooter>
                     <Progress value={12} aria-label="12% increase" />
@@ -358,16 +358,18 @@ function Dashboard() {
               </div>
 
               {/* TABLAS */}
-              <Tabs defaultValue="week">
+              <Tabs defaultValue="En producción">
                 <div className="flex items-center">
                   {/* LISTADO DE TABLAS */}
                   <TabsList>
-                    <TabsTrigger value="week">Week</TabsTrigger>
-                    <TabsTrigger value="month">Month</TabsTrigger>
-                    <TabsTrigger value="year">Year</TabsTrigger>
+                    <TabsTrigger value="Todas">Todas</TabsTrigger>
+                    <TabsTrigger value="En producción">En producción</TabsTrigger>
+                    <TabsTrigger value="En revisión">En revisión</TabsTrigger>
+                    <TabsTrigger value="En desarrollo">En desarrollo</TabsTrigger>
                   </TabsList>
-                  <div className="ml-auto flex items-center gap-2">
-                    <DropdownMenu>
+                  {/* <div className="ml-auto flex items-center gap-2"> */}
+                  {/* FILTRAR */}
+                  {/* <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="h-7 gap-1 text-sm">
                           <ListFilter className="h-3.5 w-3.5" />
@@ -381,16 +383,17 @@ function Dashboard() {
                         <DropdownMenuCheckboxItem>En revisión</DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem>En desarrollo</DropdownMenuCheckboxItem>
                       </DropdownMenuContent>
-                    </DropdownMenu>
-                    {/* Export Button */}
-                    {/* <Button size="sm" variant="outline" className="h-7 gap-1 text-sm">
+                    </DropdownMenu> */}
+                  {/* Export Button */}
+                  {/* <Button size="sm" variant="outline" className="h-7 gap-1 text-sm">
                       <File className="h-3.5 w-3.5" />
                       <span className="sr-only sm:not-sr-only">Export</span>
                     </Button> */}
-                  </div>
+                  {/* </div> */}
                 </div>
-                {/* TABLA SEMANAL */}
-                <TabsContent value="week">
+
+                {/* TABLA Todas */}
+                <TabsContent value="Todas">
                   <Card>
                     <CardHeader className="px-7">
                       <CardTitle>UATs</CardTitle>
@@ -423,8 +426,17 @@ function Dashboard() {
                                     </div>
                                   </TableCell>
                                   <TableCell className="hidden sm:table-cell">
-                                    <Badge className="text-xs" variant="secondary">
-                                      {uat?.status}
+                                    <Badge
+                                      className="text-xs"
+                                      variant={
+                                        uat.status == "En revisión"
+                                          ? "outline"
+                                          : uat.status == "En producción"
+                                          ? "secondary"
+                                          : "destructive"
+                                      }
+                                    >
+                                      {uat.status}
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
@@ -433,6 +445,189 @@ function Dashboard() {
                               )
                             )
                           )}
+                        </TableBody>
+                        {/* PIE DE LA TABLA */}
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                {/* TABLA En producción */}
+                <TabsContent value="En producción">
+                  <Card>
+                    <CardHeader className="px-7">
+                      <CardTitle>UATs</CardTitle>
+                      <CardDescription>Enlaces de pruebas de scriptings.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        {/* CABECERA DE LA TABLA */}
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Scripting</TableHead>
+                            <TableHead className="hidden sm:table-cell">Estado</TableHead>
+                            <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                            <TableHead className="text-right">OSA</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        {/* CUERPO DE LA TABLA */}
+                        <TableBody>
+                          {/* Fila 1 */}
+                          {/* <TableRow className="bg-accent"></TableCell>*/}
+                          {uats
+                            .filter((uat) => uat.status === "En producción")
+                            .map(
+                              (uat) => (
+                                console.log("UAT Impresa: ", uat),
+                                (
+                                  <TableRow key={uat.id}>
+                                    <TableCell>
+                                      <div className="font-medium">{uat.script}</div>
+                                      <div className="hidden text-sm text-muted-foreground md:inline">
+                                        <Link to={uat.link}>Click aquí para acceder</Link>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                      <Badge
+                                        className="text-xs"
+                                        variant={
+                                          uat.status == "En revisión"
+                                            ? "outline"
+                                            : uat.status == "En producción"
+                                            ? "secondary"
+                                            : "destructive"
+                                        }
+                                      >
+                                        {uat.status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+                                    <TableCell className="text-right">{uat.osa}</TableCell>
+                                  </TableRow>
+                                )
+                              )
+                            )}
+                        </TableBody>
+                        {/* PIE DE LA TABLA */}
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                {/* TABLA En revisión */}
+                <TabsContent value="En revisión">
+                  <Card>
+                    <CardHeader className="px-7">
+                      <CardTitle>UATs</CardTitle>
+                      <CardDescription>Enlaces de pruebas de scriptings.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        {/* CABECERA DE LA TABLA */}
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Scripting</TableHead>
+                            <TableHead className="hidden sm:table-cell">Estado</TableHead>
+                            <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                            <TableHead className="text-right">OSA</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        {/* CUERPO DE LA TABLA */}
+                        <TableBody>
+                          {/* Fila 1 */}
+                          {/* <TableRow className="bg-accent"></TableCell>*/}
+                          {uats
+                            .filter((uat) => uat.status === "En revisión")
+                            .map(
+                              (uat) => (
+                                console.log("UAT Impresa: ", uat),
+                                (
+                                  <TableRow key={uat.id}>
+                                    <TableCell>
+                                      <div className="font-medium">{uat.script}</div>
+                                      <div className="hidden text-sm text-muted-foreground md:inline">
+                                        <Link to={uat.link}>Click aquí para acceder</Link>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                      <Badge
+                                        className="text-xs"
+                                        variant={
+                                          uat.status == "En revisión"
+                                            ? "outline"
+                                            : uat.status == "En producción"
+                                            ? "secondary"
+                                            : "destructive"
+                                        }
+                                      >
+                                        {uat.status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+                                    <TableCell className="text-right">{uat.osa}</TableCell>
+                                  </TableRow>
+                                )
+                              )
+                            )}
+                        </TableBody>
+                        {/* PIE DE LA TABLA */}
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                {/* TABLA En desarrollo */}
+                <TabsContent value="En desarrollo">
+                  <Card>
+                    <CardHeader className="px-7">
+                      <CardTitle>UATs</CardTitle>
+                      <CardDescription>Enlaces de pruebas de scriptings.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        {/* CABECERA DE LA TABLA */}
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Scripting</TableHead>
+                            <TableHead className="hidden sm:table-cell">Estado</TableHead>
+                            <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                            <TableHead className="text-right">OSA</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        {/* CUERPO DE LA TABLA */}
+                        <TableBody>
+                          {/* Fila 1 */}
+                          {/* <TableRow className="bg-accent"></TableCell>*/}
+                          {uats
+                            .filter((uat) => uat.status === "En desarrollo")
+                            .map(
+                              (uat) => (
+                                console.log("UAT Impresa: ", uat),
+                                (
+                                  <TableRow key={uat.id}>
+                                    <TableCell>
+                                      <div className="font-medium">{uat.script}</div>
+                                      <div className="hidden text-sm text-muted-foreground md:inline">
+                                        <Link to={uat.link}>Click aquí para acceder</Link>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                      <Badge
+                                        className="text-xs"
+                                        variant={
+                                          uat.status == "En revisión"
+                                            ? "outline"
+                                            : uat.status == "En producción"
+                                            ? "secondary"
+                                            : "destructive"
+                                        }
+                                      >
+                                        {uat.status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+                                    <TableCell className="text-right">{uat.osa}</TableCell>
+                                  </TableRow>
+                                )
+                              )
+                            )}
                         </TableBody>
                         {/* PIE DE LA TABLA */}
                       </Table>
@@ -487,6 +682,7 @@ function Dashboard() {
                   <div className="grid gap-3">
                     {/* Formulario para subida de UAT */}
                     <form onSubmit={handleSaveUat} className="grid gap-3">
+                      {/* URL UAT */}
                       <div className="space-y-1.5">
                         <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           URL UAT
@@ -507,42 +703,7 @@ function Dashboard() {
                         />
                       </div>
 
-                      <div className="space-y-1.5">
-                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          Scripting
-                        </Label>
-                        <p className="text-[0.8rem] text-muted-foreground">Introduce scripting al que pertenece</p>
-                        <Input
-                          id="script"
-                          name="uat_script"
-                          value={uatData.uat_script}
-                          onChange={handleChange}
-                          placeholder="Introduce Script al que pertenece la UAT"
-                          type="text"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          // disabled={isLoading}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          OSA
-                        </Label>
-                        <p className="text-[0.8rem] text-muted-foreground">Introduce la OSA a la que pertenece</p>
-                        <Input
-                          id="osa"
-                          name="uat_osa"
-                          value={uatData.uat_osa}
-                          onChange={handleChange}
-                          placeholder="Introduce Script al que pertenece la UAT"
-                          type="text"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          // disabled={isLoading}
-                        />
-                      </div>
-
+                      {/* Estado */}
                       <div className="space-y-1.5">
                         <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           Estado
@@ -561,6 +722,63 @@ function Dashboard() {
                             <SelectItem value="En producción">En producción</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      {/* Scripting */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Scripting
+                        </Label>
+                        <p className="text-[0.8rem] text-muted-foreground">Introduce scripting al que pertenece</p>
+                        <Select
+                          name="uat_script"
+                          onValueChange={(value) => handleChange({ target: { name: "uat_script", value } })}
+                        >
+                          <SelectTrigger id="status" aria-label="Select status">
+                            <SelectValue placeholder="Selecciona el Scripting al que pertenece" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PC Customer Care Completo">PC Customer Care Completo</SelectItem>
+                            <SelectItem value="Customer Averías">Customer Averías</SelectItem>
+                            <SelectItem value="Fallo de supervisión">Fallo de supervisión</SelectItem>
+                            <SelectItem value="Humanización de Robos">Humanización de Robos</SelectItem>
+                            <SelectItem value="MANTENIMIENTO PILOTO Saltos de alarma">
+                              MANTENIMIENTO PILOTO Saltos de alarma
+                            </SelectItem>
+                            <SelectItem value="No Capta No Salta">No Capta No Salta</SelectItem>
+                            <SelectItem value="Nuevo Proceso Tamper">Nuevo Proceso Tamper</SelectItem>
+                            <SelectItem value="Nuevo Proceso de FFAA">Nuevo Proceso de FFAA</SelectItem>
+                            <SelectItem value="PCC - ODC">PCC - ODC</SelectItem>
+                            <SelectItem value="Proceso Antiguo Tamper">Proceso Antiguo Tamper</SelectItem>
+                            <SelectItem value="Proceso cc Ruidos Extraños">Proceso cc Ruidos Extraños</SelectItem>
+                            <SelectItem value="Reclamación Facturacion">Reclamación Facturacion</SelectItem>
+                            <SelectItem value="Reclamación de Bajas">Reclamación de Bajas</SelectItem>
+                            <SelectItem value="Saltos de Alarma">Saltos de Alarma</SelectItem>
+                            <SelectItem value="Gestion Chat Customer Service">Gestion Chat Customer Service</SelectItem>
+                            <SelectItem value="Gestión Mails Customer Service">
+                              Gestión Mails Customer Service
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* OSA */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          OSA
+                        </Label>
+                        <p className="text-[0.8rem] text-muted-foreground">Introduce la OSA a la que pertenece</p>
+                        <Input
+                          id="osa"
+                          name="uat_osa"
+                          value={uatData.uat_osa}
+                          onChange={handleChange}
+                          placeholder="Introduce Script al que pertenece la UAT"
+                          type="text"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          // disabled={isLoading}
+                        />
                       </div>
 
                       <div className="space-y-1.5">
@@ -656,10 +874,10 @@ function Dashboard() {
                   </div> */}
                 </CardContent>
                 <CardFooter className="flex flex-row items-center border-t bg-muted/50 px-6 py-3">
-                  <div className="text-xs text-muted-foreground">
+                  {/* <div className="text-xs text-muted-foreground">
                     Updated <time dateTime="2023-11-23">November 23, 2023</time>
-                  </div>
-                  <Pagination className="ml-auto mr-0 w-auto">
+                  </div> */}
+                  {/* <Pagination className="ml-auto mr-0 w-auto">
                     <PaginationContent>
                       <PaginationItem>
                         <Button size="icon" variant="outline" className="h-6 w-6">
@@ -674,7 +892,7 @@ function Dashboard() {
                         </Button>
                       </PaginationItem>
                     </PaginationContent>
-                  </Pagination>
+                  </Pagination> */}
                 </CardFooter>
               </Card>
             </div>
