@@ -10,7 +10,7 @@ import {
 const router = express.Router();
 
 // Darse de alta con usuario , email, matricula y contraseña
-router.post("/signup", signup); //Cliente aun en desarrollo
+router.post("/signup", signup);
 
 // Verificar identidad del usuario
 router.post("/verifyToken", verifyTokenController);
@@ -24,7 +24,7 @@ router.post("/auth/microsoft", loginWithMicrosoft);
 // Autenticación OAuth con Google
 router.post("/auth/google", loginWithGoogle);
 
-// Refresh Token de Google, EN DESARROLLO
+// Refresh Token de Google, EN DESARROLLO, NO EN USO
 router.post("/auth/google/refresh-token", async (req, res) => {
   try {
     const user = new UserRefreshClient(CLIENT_ID, CLIENT_SECRET, req.body.refreshToken);

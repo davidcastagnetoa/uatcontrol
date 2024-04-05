@@ -55,6 +55,8 @@ const initializeDatabase = () => {
     user_id INTEGER,
     script TEXT NOT NULL,
     link TEXT NOT NULL,
+    osa TEXT NOT NULL,
+    status TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (id)
   )`,
     (err) => {
@@ -79,7 +81,7 @@ const closeDatabase = () => {
 };
 
 // Buscar un usuario por email.
-const searchUser = (email) => {
+const searchUserByEmail = (email) => {
   return new Promise((resolve, reject) => {
     db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, row) => {
       if (err) {
@@ -92,7 +94,21 @@ const searchUser = (email) => {
   });
 };
 
-// Inserta un nuevo usuario en la BD.
+// Buscar un usuario por username
+const searchUserByUsername = (username) => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, row) => {
+      if (err) {
+        console.error("Error al buscar el usuario:", err.message);
+        reject(err);
+      } else {
+        resolve(row);
+      }
+    });
+  });
+};
+
+// Inserta un nuevo usuario en la BD. Resuelve su ID
 const insertUser = (userName, userEmail, userPicture, userMatricula) => {
   return new Promise((resolve, reject) => {
     db.run(
@@ -111,17 +127,57 @@ const insertUser = (userName, userEmail, userPicture, userMatricula) => {
 };
 
 // Extraer las UAT del usuario
-const getUserUAT = (userId) => {
+const getUserUATsByEmail = (email) => {
   return new Promise((resolve, reject) => {
-    db.get(`SELECT * FROM uat_collection WHERE user_id = ?`, [userId], (err, rows) => {
+    // Primero, obtén el userId basado en el email
+    db.get(`SELECT id FROM users WHERE email = ?`, [email], (err, user) => {
       if (err) {
-        console.error("Error al obtener las UAT:", err.message);
+        console.error("Error al obtener el userId:", err.message);
         reject(err);
+      } else if (user) {
+        // Ahora, obtén todas las UAT para el userId encontrado
+        db.all(`SELECT * FROM uat_collection WHERE user_id = ?`, [user.id], (err, rows) => {
+          if (err) {
+            console.error("Error al obtener las UATs:", err.message);
+            reject(err);
+          } else {
+            // console.debug("UATs halladas: ", rows);
+            resolve(rows);
+          }
+        });
       } else {
-        resolve(rows);
+        // Si no hay usuario con ese email, devuelve un arreglo vacío
+        resolve([]);
       }
     });
   });
 };
 
-export { db, initializeDatabase, closeDatabase, searchUser, insertUser, getUserUAT };
+// Insertar una nueva UAT en la colección de UATs del usuario. Resuelve su ID.
+const insertUatCollection = (userId, script, link, osa, status) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO uat_collection (user_id, script, link, osa, status) VALUES (?, ?, ?, ?, ?)`,
+      [userId, script, link, osa, status],
+
+      function (err) {
+        if (err) {
+          console.error("Error al insertar el UAT:", err.message);
+          reject(err);
+        }
+        resolve(this.lastID);
+      }
+    );
+  });
+};
+
+export {
+  db,
+  initializeDatabase,
+  closeDatabase,
+  searchUserByEmail,
+  searchUserByUsername,
+  insertUser,
+  getUserUATsByEmail,
+  insertUatCollection,
+};

@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import AuthContext from "../context/AuthContext";
 
+// ESTE CONTEXTO SE ENCARGA DE GESTIONAR LA AUTENTICACIÓN DEL USUARIO
+
 const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({ status: "pending", user: null });
 
@@ -135,9 +137,63 @@ const AuthProvider = ({ children }) => {
     window.location.href = "/login";
   };
 
+  // Funcion de signup para dar de alta a un nuevo usuario
+  const signup = async (username, email, matricula, password) => {
+    console.log("Creando a nuevo usuario: ", username);
+
+    try {
+      // Realizar una petición al servidor para iniciar sesión
+      console.log("Llamando a endpoint http://localhost:8080/api/signup");
+      const response = await fetch("http://localhost:8080/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          Accept: "*/*",
+        },
+        body: JSON.stringify({ username, email, matricula, password }),
+      });
+
+      console.warn("Respuesta recibida del servidor al intentar iniciar sesión: ", response);
+
+      if (!response.ok) {
+        // Si el servidor responde con un código de error, se lanza error
+        throw new Error("Error en la respuesta del servidor, verifica los argumentos del controlador, o el cliente");
+      }
+
+      const data = await response.json();
+      // El servidor debe generar un token
+      console.warn("Dato recibido del servidor: ", data);
+
+      if (data.token) {
+        // Como el servidor (login de authController.js) responde con un objeto que contiene el token
+        // si las credenciales son correctas, se almacena dicho token en el localStore. Es necesario
+        // almacenar dicho token en el localStore, ya que el contexto AuthContext comprueba
+        // dicho token (authState.status) para verificar si el usuario esta authenticado o no.
+        // Ya que las rutas protegidas solo se acceden si el Contenido de authState.status es "authenticated"
+
+        const email = data?.userData.email;
+        const picture = data?.userData.picture;
+
+        localStorage.setItem("token", data.token);
+        setAuthState({ status: "authenticated", user: { username, email, picture }, token: data.token });
+        return true; // Indicar que el alta del usuario fue exitoso
+      } else {
+        console.log("Token no proporcionado, revisa el controlador del servidor");
+        throw new Error("Token no proporcionado");
+      }
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+      setAuthState({ status: "error", user: null, token: null });
+      return false; // Indicar que el alta del usuario falló
+    }
+  };
+
   // Pasar el estado de autenticación y las acciones a los consumidores
   console.log("Contenido de authState: " + JSON.stringify(authState));
-  return <AuthContext.Provider value={{ authState, login, verifyToken, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ authState, login, signup, verifyToken, logout }}>{children}</AuthContext.Provider>
+  );
 };
 
 export default AuthProvider;

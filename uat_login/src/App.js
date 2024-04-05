@@ -9,6 +9,7 @@ import { ThemeProvider } from "./context/ThemeProvider";
 import { DataProvider } from "./context/DataContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { MicrosoftAuthRedirect } from "./components/MicrosoftAuthRedirect";
+import NotFoundPage from "./components/NotFoundPage";
 
 // Google Provider Data
 const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
@@ -35,6 +36,7 @@ function App() {
                   }
                 />
                 <Route path="/" element={<ProtectedRoute redirectTo="/" />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Router>
           </DataProvider>

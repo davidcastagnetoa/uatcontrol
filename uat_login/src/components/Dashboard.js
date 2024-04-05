@@ -1,15 +1,13 @@
 // Dashboard.js
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { DataContext } from "../context/DataContext.js";
 import AuthContext from "../context/AuthContext";
 import { useState } from "react";
-
 import { Label } from "./ui/label";
 import { useToast } from "./ui/use-toast";
 import { Link } from "react-router-dom";
 import { Toaster } from "./ui/toaster";
 import { UserNav } from "./UserNav.jsx";
-
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,9 +27,7 @@ import {
   Truck,
   Users2,
 } from "lucide-react";
-
 import { Badge } from "./ui/badge";
-
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -40,11 +36,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./ui/breadcrumb";
-
 import { Button } from "./ui/button";
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
-
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -54,27 +47,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-
 import { Input } from "./ui/input";
-
 import { Pagination, PaginationContent, PaginationItem } from "./ui/pagination";
-
 import { Progress } from "./ui/progress";
-
 import { Separator } from "./ui/separator";
-
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 function Dashboard() {
-  const { save } = useContext(DataContext);
+  const { saveUAT, getAllUATs } = useContext(DataContext);
   const { authState } = useContext(AuthContext);
-  const [uatData, setUatData] = useState({ uat_link: "", uat_script: "" });
+  const [uatData, setUatData] = useState({ uat_link: "", uat_script: "", uat_osa: "", uat_status: "" });
+  const [uats, setUats] = useState([]);
   const [error, setError] = useState("");
   const [openToaster, setOpenToaster] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -82,12 +69,13 @@ function Dashboard() {
 
   console.log("Valor de authState: " + JSON.stringify(authState));
   console.log("authState.user: ", authState.user);
+
   const username = authState.user ? authState.user.username : "Invitado";
   const email = authState.user ? authState.user.email : "Invitado@invitado.com";
   const picture = authState.user ? authState.user.picture : "./ruta_invitado_avatar";
-  // console.log("Valor de username: " + username);
-  // console.log("Valor de email: " + email);
-  // console.log("Ruta de picture: " + picture);
+  // console.debug("Valor de username: " + username);
+  // console.debug("Valor de email: " + email);
+  // console.debug("Ruta de picture: " + picture);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,26 +85,28 @@ function Dashboard() {
     }));
   };
 
+  console.log("Valores de uatData: ", uatData);
+
   const handleSaveUat = async (event) => {
     event.preventDefault();
     setIsLoading(true);
 
     try {
-      if (!uatData.uat_link || !uatData.uat_script) {
+      if (!uatData.uat_link || !uatData.uat_script || !uatData.uat_osa || !uatData.uat_status) {
         setIsLoading(false);
-        throw new Error("Se deben proporcionar tanto el enlace UAT como el script.");
+        throw new Error("Rellene todos los campos.");
       }
       // Aqui envias los datos al servidor para almacenarlos en la base de datos
-      const saveUat = await save(uatData.uat_link, uatData.uat_script, username);
+      const saveUat = await saveUAT(uatData.uat_link, uatData.uat_script, uatData.uat_osa, uatData.uat_status);
       if (saveUat) {
-        console.log("Enlace guardada correctamente");
+        console.log("UAT guardada correctamente: ", saveUat);
         toast({
           variant: "default", //outline
           title: "Enlace guardado correctamente",
           // description: "",
           open: { openToaster },
         });
-        setUatData({ uat_link: "", uat_script: "" });
+        setUatData({ uat_link: "", uat_script: "", uat_osa: "", uat_status: "" });
         setOpenToaster(true);
       } else {
         throw new Error("No hay respuesta por parte del servidor. Intente más tarde.");
@@ -137,56 +127,26 @@ function Dashboard() {
       console.error(error);
       setOpenToaster(true);
     } finally {
+      handleGetAllUATs();
       setIsLoading(false); // Termina el indicador de carga
     }
   };
 
-  return (
-    // <div className="h-full flex-1 flex-col space-y-8 p-8 flex">
-    //   <div className="flex items-center justify-between space-y-2">
-    //     <div>
-    //       <h2 className="text-2xl font-bold tracking-tight">Welcome back! {username}</h2>
-    //       <p className="text-muted-foreground">Listado de UATs</p>
-    //       <p className="text-muted-foreground">Email: {email} </p>
-    //     </div>
-    //     <div className="flex items-center space-x-2">
-    //       <UserNav />
-    //     </div>
-    //   </div>
+  useEffect(() => {
+    handleGetAllUATs();
+  }, []);
 
-    //   <div>
-    //     <form onSubmit={handleSaveUat} className="flex flex-col gap-1">
-    //       <Label>Introduce enlace de UAT</Label>
-    //       <Input
-    //         id="link"
-    //         name="uat_link"
-    //         value={uatData.uat_link}
-    //         onChange={handleChange}
-    //         placeholder="Introduce Enlace UAT"
-    //         type="text"
-    //         autoCapitalize="none"
-    //         autoCorrect="off"
-    //         // disabled={isLoading}
-    //       />
-    //       <Label>Introduce scripting al que pertenece</Label>
-    //       <Input
-    //         id="script"
-    //         name="uat_script"
-    //         value={uatData.uat_script}
-    //         onChange={handleChange}
-    //         placeholder="Introduce Script al que pertenece la UAT"
-    //         type="text"
-    //         autoCapitalize="none"
-    //         autoCorrect="off"
-    //         // disabled={isLoading}
-    //       />
-    //       <button type="submit" disabled={isLoading}>
-    //         Guardar
-    //       </button>
-    //     </form>
-    //   </div>
-    //   <Toaster />
-    // </div>
+  const handleGetAllUATs = async () => {
+    try {
+      const uatData = await getAllUATs(); // Asume que getAllUATs() es la función que recuperará las UATs
+      setUats(uatData);
+      console.log("UATs recuperadas correctamente:", uatData);
+    } catch (error) {
+      console.error("Hubo un problema al recuperar las UATs:", error);
+    }
+  };
+
+  return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         {/* BARRA LATERAL IZQUIERDA */}
@@ -356,7 +316,7 @@ function Dashboard() {
               {/* TARJETAS SUPERIORES */}
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
                 {/* TARJETA 1 */}
-                {/* <Card className="sm:col-span-2">
+                <Card className="sm:col-span-2">
                   <CardHeader className="pb-3">
                     <CardTitle>Your Orders</CardTitle>
                     <CardDescription className="max-w-lg text-balance leading-relaxed">
@@ -366,10 +326,10 @@ function Dashboard() {
                   <CardFooter>
                     <Button>Create New Order</Button>
                   </CardFooter>
-                </Card> */}
+                </Card>
 
                 {/* TARJETA 2 */}
-                {/* <Card>
+                <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>This Week</CardDescription>
                     <CardTitle className="text-4xl">$1329</CardTitle>
@@ -380,10 +340,10 @@ function Dashboard() {
                   <CardFooter>
                     <Progress value={25} aria-label="25% increase" />
                   </CardFooter>
-                </Card> */}
+                </Card>
 
                 {/* TARJETA 3 */}
-                {/* <Card>
+                <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>This Month</CardDescription>
                     <CardTitle className="text-3xl">$5,329</CardTitle>
@@ -394,7 +354,7 @@ function Dashboard() {
                   <CardFooter>
                     <Progress value={12} aria-label="12% increase" />
                   </CardFooter>
-                </Card> */}
+                </Card>
               </div>
 
               {/* TABLAS */}
@@ -411,15 +371,15 @@ function Dashboard() {
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="h-7 gap-1 text-sm">
                           <ListFilter className="h-3.5 w-3.5" />
-                          <span className="sr-only sm:not-sr-only">Filter</span>
+                          <span className="sr-only sm:not-sr-only">Filtrar</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+                        <DropdownMenuLabel>Filtrado por</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuCheckboxItem checked>Fulfilled</DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem>Declined</DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem>Refunded</DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem checked>En producción</DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem>En revisión</DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem>En desarrollo</DropdownMenuCheckboxItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                     {/* Export Button */}
@@ -451,53 +411,28 @@ function Dashboard() {
                         <TableBody>
                           {/* Fila 1 */}
                           {/* <TableRow className="bg-accent"></TableCell>*/}
-                          <TableRow>
-                            <TableCell>
-                              <div className="font-medium">Customer Completo</div>
-                              <div className="hidden text-sm text-muted-foreground md:inline">
-                                <Link to="#">Click aquí para acceder</Link>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                              <Badge className="text-xs" variant="secondary">
-                                Desplegado
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
-                            <TableCell className="text-right">OSA-2426</TableCell>
-                          </TableRow>
-                          {/* Fila 2 */}
-                          <TableRow>
-                            <TableCell>
-                              <div className="font-medium">Saltos de Alarma</div>
-                              <div className="hidden text-sm text-muted-foreground md:inline">
-                                <Link to="#">Click aquí para acceder</Link>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                              <Badge className="text-xs" variant="outline">
-                                En desarrollo
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">2023-06-24</TableCell>
-                            <TableCell className="text-right">OSA-2285</TableCell>
-                          </TableRow>
-                          {/* Fila 3*/}
-                          <TableRow>
-                            <TableCell>
-                              <div className="font-medium">Nuevo Proceso Tamper</div>
-                              <div className="hidden text-sm text-muted-foreground md:inline">
-                                <Link to="#">Click aquí para acceder</Link>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                              <Badge className="text-xs" variant="default">
-                                En evaluacion
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
-                            <TableCell className="text-right">OSA-2212</TableCell>
-                          </TableRow>
+                          {uats.map(
+                            (uat) => (
+                              console.log("UAT Impresa: ", uat),
+                              (
+                                <TableRow key={uat.id}>
+                                  <TableCell>
+                                    <div className="font-medium">{uat.script}</div>
+                                    <div className="hidden text-sm text-muted-foreground md:inline">
+                                      <Link to={uat.link}>Click aquí para acceder</Link>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="hidden sm:table-cell">
+                                    <Badge className="text-xs" variant="secondary">
+                                      {uat?.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+                                  <TableCell className="text-right">{uat.osa}</TableCell>
+                                </TableRow>
+                              )
+                            )
+                          )}
                         </TableBody>
                         {/* PIE DE LA TABLA */}
                       </Table>
@@ -527,11 +462,11 @@ function Dashboard() {
                     <CardDescription>Date: November 23, 2023</CardDescription>
                   </div>
                   <div className="ml-auto flex items-center gap-1">
-                    <Button size="sm" variant="outline" className="h-8 gap-1">
+                    {/* <Button size="sm" variant="outline" className="h-8 gap-1">
                       <Truck className="h-3.5 w-3.5" />
                       <span className="lg:sr-only xl:not-sr-only xl:whitespace-nowrap">Track Order</span>
-                    </Button>
-                    <DropdownMenu>
+                    </Button> */}
+                    {/* <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="icon" variant="outline" className="h-8 w-8">
                           <MoreVertical className="h-3.5 w-3.5" />
@@ -540,16 +475,101 @@ function Dashboard() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>Edit</DropdownMenuItem>
-                        {/* <DropdownMenuItem>Export</DropdownMenuItem> */}
+                        <DropdownMenuItem>Export</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>Trash</DropdownMenuItem>
                       </DropdownMenuContent>
-                    </DropdownMenu>
+                    </DropdownMenu> */}
                   </div>
                 </CardHeader>
+
                 <CardContent className="p-6 text-sm">
                   <div className="grid gap-3">
-                    <div className="font-semibold">Order Details</div>
+                    {/* Formulario para subida de UAT */}
+                    <form onSubmit={handleSaveUat} className="grid gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          URL UAT
+                        </Label>
+                        <p className="text-[0.8rem] text-muted-foreground">
+                          Introduce el enlace para pruebas de la UAT
+                        </p>
+                        <Input
+                          id="link"
+                          name="uat_link"
+                          value={uatData.uat_link}
+                          onChange={handleChange}
+                          placeholder="Introduce Enlace UAT"
+                          type="text"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          // disabled={isLoading}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Scripting
+                        </Label>
+                        <p className="text-[0.8rem] text-muted-foreground">Introduce scripting al que pertenece</p>
+                        <Input
+                          id="script"
+                          name="uat_script"
+                          value={uatData.uat_script}
+                          onChange={handleChange}
+                          placeholder="Introduce Script al que pertenece la UAT"
+                          type="text"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          // disabled={isLoading}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          OSA
+                        </Label>
+                        <p className="text-[0.8rem] text-muted-foreground">Introduce la OSA a la que pertenece</p>
+                        <Input
+                          id="osa"
+                          name="uat_osa"
+                          value={uatData.uat_osa}
+                          onChange={handleChange}
+                          placeholder="Introduce Script al que pertenece la UAT"
+                          type="text"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          // disabled={isLoading}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Estado
+                        </Label>
+                        <p className="text-[0.8rem] text-muted-foreground">Selecciona el estado de la OSA</p>
+                        <Select
+                          name="uat_status"
+                          onValueChange={(value) => handleChange({ target: { name: "uat_status", value } })}
+                        >
+                          <SelectTrigger id="status" aria-label="Select status">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="En desarrollo">En desarrollo</SelectItem>
+                            <SelectItem value="En revisión">En revisión</SelectItem>
+                            <SelectItem value="En producción">En producción</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Button type="submit" disabled={isLoading}>
+                          Guardar
+                        </Button>
+                      </div>
+                    </form>
+                    {/* <div className="font-semibold">Order Details</div>
                     <ul className="grid gap-3">
                       <li className="flex items-center justify-between">
                         <span className="text-muted-foreground">
@@ -582,9 +602,9 @@ function Dashboard() {
                         <span className="text-muted-foreground">Total</span>
                         <span>$329.00</span>
                       </li>
-                    </ul>
+                    </ul> */}
                   </div>
-                  <Separator className="my-4" />
+                  {/* <Separator className="my-4" />
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-3">
                       <div className="font-semibold">Shipping Information</div>
@@ -633,7 +653,7 @@ function Dashboard() {
                         <dd>**** **** **** 4532</dd>
                       </div>
                     </dl>
-                  </div>
+                  </div> */}
                 </CardContent>
                 <CardFooter className="flex flex-row items-center border-t bg-muted/50 px-6 py-3">
                   <div className="text-xs text-muted-foreground">
@@ -661,6 +681,7 @@ function Dashboard() {
           </main>
         </div>
       </div>
+      <Toaster />
     </TooltipProvider>
   );
 }

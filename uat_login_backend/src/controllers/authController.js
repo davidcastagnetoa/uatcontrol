@@ -2,7 +2,7 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import { db, searchUser, insertUser } from "../../utils/db.js";
+import { db, searchUserByEmail, insertUser } from "../../utils/db.js";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { OAuth2Client } from "google-auth-library";
 
@@ -144,6 +144,7 @@ export const signup = async (req, res) => {
     return res.status(400).json({ message: "La contraseña es requerida" });
   }
 
+  // Se hashea la contraseña antes de guardarla en la DB
   const salt = bcrypt.genSaltSync(10);
   const passwordHash = bcrypt.hashSync(password, salt);
 
@@ -249,7 +250,7 @@ export const loginWithMicrosoft = async (req, res) => {
     console.debug("Contenido de payload de Microsoft: ", payload);
 
     // Buscamos al usuario en la base de datos por email de Microsoft
-    let row = await searchUser(userEmail);
+    let row = await searchUserByEmail(userEmail);
 
     if (!row) {
       // Usuario de Microsoft no existe, insertamos al nuevo usuario
@@ -332,7 +333,7 @@ export const loginWithGoogle = async (req, res) => {
     let userMatricula = "unregistered";
 
     // Buscamos al usuario en la base de datos por email de Google
-    let row = await searchUser(userEmail);
+    let row = await searchUserByEmail(userEmail);
 
     if (!row) {
       // Usuario de Google no existe, insertamos al nuevo usuario

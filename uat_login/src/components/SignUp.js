@@ -14,11 +14,11 @@ import { LoginButton } from "./LoginButton";
 import { MicrosoftLogin } from "./MicrosoftLogin";
 
 function SignUp() {
-  const { login, verifyToken } = useContext(AuthContext);
+  const { login, signup, verifyToken } = useContext(AuthContext);
   const [openToaster, setOpenToaster] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [credentials, setCredentials] = useState({ username: "", password: "" });
+  const [credentials, setCredentials] = useState({ username: "", email: "", matricula: "", password: "" });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -88,6 +88,7 @@ function SignUp() {
     }
   };
 
+  // EN DESARROLLO LO DE CONFIRMAR CONTRASEÑA
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
@@ -95,7 +96,12 @@ function SignUp() {
 
     try {
       // login es una función asíncrona, en AuthProvider.js que devuelve un booleano, despues de comprobar en el servidor, una vez comprobado se trae un true o false
-      const success = await login(credentials.username, credentials.password);
+      const success = await signup(
+        credentials.username,
+        credentials.email,
+        credentials.matricula,
+        credentials.password
+      );
       if (success) {
         setIsLoading(false);
         navigate("/dashboard", { replace: true });
@@ -136,14 +142,28 @@ function SignUp() {
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
               <div className="grid gap-2">
-                {/* Label and Input for Email */}
-                <Label htmlFor="email">Email</Label>
+                {/* Label and Input for Username */}
+                <Label htmlFor="Nombre de usuario">Nombre de usuario</Label>
                 <Input
                   id="username"
                   name="username"
                   value={credentials.username}
                   onChange={handleChange}
-                  placeholder="Email o matrícula"
+                  placeholder="Nombre de usuario corporativo"
+                  type="text"
+                  autoCapitalize="none"
+                  autoComplete="text"
+                  autoCorrect="off"
+                  disabled={isLoading}
+                />
+                {/* Label and Input for Email */}
+                <Label htmlFor="Email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  value={credentials.email}
+                  onChange={handleChange}
+                  placeholder="Nombre de usuario corporativo"
                   type="text"
                   autoCapitalize="none"
                   autoComplete="text"
@@ -153,11 +173,11 @@ function SignUp() {
                 {/* Label and Input for matricula */}
                 <Label htmlFor="text">Matrícula</Label>
                 <Input
-                  id="username"
-                  name="username"
-                  value={credentials.username}
+                  id="matricula"
+                  name="matricula"
+                  value={credentials.matricula}
                   onChange={handleChange}
-                  placeholder="Email o matrícula"
+                  placeholder="Matrícula"
                   type="text"
                   autoCapitalize="none"
                   autoComplete="text"
