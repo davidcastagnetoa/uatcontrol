@@ -229,7 +229,7 @@ export const loginWithMicrosoft = async (req, res) => {
   });
 
   try {
-    console.debug("\n...:: Ejecutando try principal ::...");
+    console.debug("\nControlador loginWithMicrosoft: Ejecutando try principal");
     console.debug("...:: Autentificando usuario con Microsoft ::...");
     const ticket = await client.api("/me");
     payload = await ticket.get();
@@ -239,7 +239,7 @@ export const loginWithMicrosoft = async (req, res) => {
   }
 
   try {
-    console.debug("\n...:: Ejecutando siguiente try ::...");
+    console.debug("\nControlador loginWithMicrosoft: Ejecutando siguiente try");
     // let { displayName: userName, userPrincipalName: userEmail } = payload;
 
     let userName = payload.displayName;
@@ -312,7 +312,7 @@ export const loginWithGoogle = async (req, res) => {
   let payload;
 
   try {
-    console.debug("...:: Ejecutando try principal ::...");
+    console.debug("Controlador loginWithGoogle: Ejecutando try principal");
     console.debug("...:: Autentificando usuario con Google ::...");
     //Este await es importante. De lo contrario la funcion getPayload no podra ser llamada
     const ticket = await oAuth2Client.verifyIdToken({
@@ -328,7 +328,7 @@ export const loginWithGoogle = async (req, res) => {
   }
 
   try {
-    console.debug("\n...:: Ejecutando siguiente try ::...");
+    console.debug("\nControlador loginWithGoogle: Ejecutando siguiente try");
     let { name: userName, email: userEmail, picture: userPicture } = payload;
     let userMatricula = "unregistered";
 
@@ -379,11 +379,12 @@ export const loginWithGoogle = async (req, res) => {
   }
 };
 
+// // EXPERIMENTAL, EN DESARROLLO
+
 // // Esta funcion recibe el token recibido por el cliente desde
 // // ProfilePage.js para actualizar los datos del usuario autenticado.
 // // Verificamos que el token sea correcto y luego actualizamos los campos
 // // correspondientes con los nuevos valores enviados por el cliente.
-// // EXPERIMENTAL, EN DESARROLLO
 // export const updateUser = async (req, res) => {
 //   const token = req.body.token;
 //   let user = await User.findByToken(token);

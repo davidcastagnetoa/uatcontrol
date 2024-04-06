@@ -16,6 +16,7 @@ import {
   File,
   Home,
   LineChart,
+  MoreHorizontal,
   ListFilter,
   MoreVertical,
   Package,
@@ -58,10 +59,11 @@ import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "./ui/t
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 function Dashboard() {
-  const { saveUAT, getAllUATs } = useContext(DataContext);
+  const { saveUAT, getAllUATs, getUATstadistics, removeUAT } = useContext(DataContext);
   const { authState } = useContext(AuthContext);
   const [uatData, setUatData] = useState({ uat_link: "", uat_script: "", uat_osa: "", uat_status: "" });
   const [uats, setUats] = useState([]);
+  const [uatStats, setUatStats] = useState([]);
   const [error, setError] = useState("");
   const [openToaster, setOpenToaster] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,8 +87,7 @@ function Dashboard() {
     }));
   };
 
-  console.log("Valores de uatData: ", uatData);
-
+  // Guarda una UAT en el servidor
   const handleSaveUat = async (event) => {
     event.preventDefault();
     setIsLoading(true);
@@ -128,23 +129,91 @@ function Dashboard() {
       setOpenToaster(true);
     } finally {
       handleGetAllUATs();
+      handleGetStadisticsUATs();
       setIsLoading(false); // Termina el indicador de carga
     }
   };
 
-  useEffect(() => {
-    handleGetAllUATs();
-  }, []);
+  // Elimina una UAT en el servidor
+  const handleDeleteUAT = async (script, link, osa) => {
+    setIsLoading(true);
 
+    try {
+      if (!link || !script || !osa) {
+        setIsLoading(false);
+        throw new Error("Faltan datos de UAT a eliminar");
+      }
+
+      // Aqui envias los datos de la UAT a borrar de la base de datos del servidor
+      const deleteUat = await removeUAT(script, link, osa);
+
+      if (deleteUat) {
+        console.log("UAT eliminada correctamente: ", deleteUat);
+        toast({
+          variant: "default", //outline
+          title: "Enlace eliminado correctamente",
+          // description: "",
+          open: { openToaster },
+        });
+        setOpenToaster(true);
+      } else {
+        throw new Error("No hay respuesta por parte del servidor. Intente más tarde.");
+      }
+
+      console.log("UAT eliminada correctamente.");
+    } catch (err) {
+      const errorMessage = "Error al eliminar la UAT";
+      console.warn(err.message);
+      setError(errorMessage);
+
+      toast({
+        variant: "destructive",
+        title: "Error al Eliminar UAT",
+        description: errorMessage,
+        open: { openToaster },
+      });
+
+      console.warn("Toaster mostrado");
+      console.error(error);
+      setOpenToaster(true);
+    } finally {
+      handleGetAllUATs(); // Actualiza el listado en Dashboard
+      handleGetStadisticsUATs();
+      setIsLoading(false); // Termina el indicador de carga
+    }
+  };
+
+  // Importa las UATs del servidor
   const handleGetAllUATs = async () => {
     try {
-      const uatData = await getAllUATs(); // Asume que getAllUATs() es la función que recuperará las UATs
+      const uatData = await getAllUATs(); // getAllUATs() es la función que recuperará las UATs
       setUats(uatData);
       console.log("UATs recuperadas correctamente:", uatData);
     } catch (error) {
       console.error("Hubo un problema al recuperar las UATs:", error);
     }
   };
+
+  // Importa las estadisticas de las UATs del servidor
+  const handleGetStadisticsUATs = async () => {
+    console.warn("Importando estadisticas");
+    try {
+      const uatStats = await getUATstadistics(); // getUATstadistics() es la función que recuperará las estadiscticas de las UATs
+      setUatStats(uatStats);
+      console.log("Estadisticas de las UATs recuperadas:", uatStats);
+    } catch (error) {
+      console.error("Hubo un problema al recuperar las UATs:", error);
+    }
+  };
+
+  console.log("Valor de uats: " + JSON.stringify(uats));
+  console.log("Valor de uatStats: " + JSON.stringify(uatStats));
+
+  // Actiualiza los datos del Contexto DataContext
+  useEffect(() => {
+    handleGetAllUATs(); // Actualiza las UATs disponibles,
+    handleGetStadisticsUATs(); // Actualiza las estadisticas de las UATs disponibles,
+  }, []);
 
   return (
     <TooltipProvider>
@@ -172,6 +241,7 @@ function Dashboard() {
               </TooltipTrigger>
               <TooltipContent side="right">Dashboard</TooltipContent>
             </Tooltip>
+
             {/* Orders */}
             {/* <Tooltip>
               <TooltipTrigger asChild>
@@ -185,19 +255,21 @@ function Dashboard() {
               </TooltipTrigger>
               <TooltipContent side="right">Orders</TooltipContent>
             </Tooltip> */}
-            {/* Products */}
-            {/* <Tooltip>
+
+            {/* UATs */}
+            <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  href="#"
+                  to="/uats"
                   className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
                 >
                   <Package className="h-5 w-5" />
-                  <span className="sr-only">Products</span>
+                  <span className="sr-only">UATs</span>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">Products</TooltipContent>
-            </Tooltip> */}
+              <TooltipContent side="right">UATs</TooltipContent>
+            </Tooltip>
+
             {/* Customers */}
             {/* <Tooltip>
               <TooltipTrigger asChild>
@@ -211,6 +283,7 @@ function Dashboard() {
               </TooltipTrigger>
               <TooltipContent side="right">Customers</TooltipContent>
             </Tooltip> */}
+
             {/* Analytics */}
             {/* <Tooltip>
               <TooltipTrigger asChild>
@@ -225,11 +298,12 @@ function Dashboard() {
               <TooltipContent side="right">Analytics</TooltipContent>
             </Tooltip> */}
           </nav>
+
           <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  href="#"
+                  to="/settings"
                   className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
                 >
                   <Settings className="h-5 w-5" />
@@ -254,50 +328,88 @@ function Dashboard() {
               </SheetTrigger>
               <SheetContent side="left" className="sm:max-w-xs">
                 <nav className="grid gap-6 text-lg font-medium">
+                  {/* Home Aside Link */}
                   <Link
-                    href="#"
+                    to="/"
                     className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
                   >
                     <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
-                    <span className="sr-only">Acme Inc</span>
+                    <span className="sr-only">Home</span>
                   </Link>
-                  <Link href="#" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+
+                  {/* Dashboard Aside Link */}
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                  >
                     <Home className="h-5 w-5" />
                     Dashboard
                   </Link>
+
                   {/* Orders Aside Link */}
-                  <Link href="#" className="flex items-center gap-4 px-2.5 text-foreground">
+                  {/* <Link to="#" className="flex items-center gap-4 px-2.5 text-foreground">
                     <ShoppingCart className="h-5 w-5" />
                     Orders
-                  </Link>
-                  {/* Products Aside Link */}
-                  <Link href="#" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+                  </Link> */}
+
+                  {/* UATs Aside Link */}
+                  <Link
+                    to="/uats"
+                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                  >
                     <Package className="h-5 w-5" />
-                    Products
+                    UATs
                   </Link>
-                  {/* Customers Aside Link */}
-                  <Link href="#" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+
+                  {/* Profile Aside Link */}
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                  >
                     <Users2 className="h-5 w-5" />
-                    Customers
+                    Profile
                   </Link>
+
                   {/* Settings Aside Link */}
-                  <Link href="#" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+                  <Link
+                    to="/settings"
+                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                  >
                     <LineChart className="h-5 w-5" />
                     Settings
                   </Link>
                 </nav>
               </SheetContent>
             </Sheet>
+
             <Breadcrumb className="hidden md:flex">
+              {/* Listado Breadcrumb */}
               <BreadcrumbList>
+                {/* Breadcrumb Dashboard */}
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href="#">Dashboard</Link>
+                    <Link to="/dashboard">Dashboard</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
+
                 {/* <BreadcrumbSeparator /> */}
+
+                {/* Breadcrumb UATs */}
+                {/* <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/uats">UATs</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem> */}
+
+                {/* <BreadcrumbSeparator /> */}
+
+                {/* Hijo Breadcrumb Edit UATs*/}
+                {/* <BreadcrumbItem>
+                  <BreadcrumbPage>Edit UATs</BreadcrumbPage>
+                </BreadcrumbItem> */}
               </BreadcrumbList>
             </Breadcrumb>
+
             <div className="relative ml-auto flex-1 md:grow-0">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -328,37 +440,49 @@ function Dashboard() {
                   </CardFooter>
                 </Card>
 
-                {/* TARJETA 2 */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>UATs en desarrollo</CardDescription>
-                    <CardTitle className="text-4xl">1</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-xs text-muted-foreground">15% En desarrollo</div>
-                  </CardContent>
-                  <CardFooter>
-                    <Progress value={25} aria-label="25% increase" />
-                  </CardFooter>
-                </Card>
+                {/* ESTADISTICAS EN PRODUCCION */}
+                {uatStats
+                  .filter((stat) => stat.status === "En producción")
+                  .map((stat) => (
+                    <Card key={stat.status}>
+                      <CardHeader className="pb-2">
+                        <CardDescription>UATs {stat.status}</CardDescription>
+                        <CardTitle className="text-4xl">{stat.count}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-xs text-muted-foreground">
+                          {stat.percentage}% {stat.status}
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
+                      </CardFooter>
+                    </Card>
+                  ))}
 
-                {/* TARJETA 3 */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>UATs en producción</CardDescription>
-                    <CardTitle className="text-3xl">4</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-xs text-muted-foreground">85% En producción</div>
-                  </CardContent>
-                  <CardFooter>
-                    <Progress value={12} aria-label="12% increase" />
-                  </CardFooter>
-                </Card>
+                {/* ESTADISTICAS EN REVISION */}
+                {uatStats
+                  .filter((stat) => stat.status === "En revisión")
+                  .map((stat) => (
+                    <Card key={stat.status}>
+                      <CardHeader className="pb-2">
+                        <CardDescription>UATs {stat.status}</CardDescription>
+                        <CardTitle className="text-4xl">{stat.count}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-xs text-muted-foreground">
+                          {stat.percentage}% {stat.status}
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
+                      </CardFooter>
+                    </Card>
+                  ))}
               </div>
 
               {/* TABLAS */}
-              <Tabs defaultValue="En producción">
+              <Tabs defaultValue="Todas">
                 <div className="flex items-center">
                   {/* LISTADO DE TABLAS */}
                   <TabsList>
@@ -407,7 +531,10 @@ function Dashboard() {
                             <TableHead>Scripting</TableHead>
                             <TableHead className="hidden sm:table-cell">Estado</TableHead>
                             <TableHead className="hidden md:table-cell">Fecha</TableHead>
-                            <TableHead className="text-right">OSA</TableHead>
+                            <TableHead className="hidden md:table-cell">OSA</TableHead>
+                            <TableHead>
+                              <span className="sr-only">Actions</span>
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         {/* CUERPO DE LA TABLA */}
@@ -419,12 +546,15 @@ function Dashboard() {
                               console.log("UAT Impresa: ", uat),
                               (
                                 <TableRow key={uat.id}>
+                                  {/* Columna de scripting */}
                                   <TableCell>
                                     <div className="font-medium">{uat.script}</div>
                                     <div className="hidden text-sm text-muted-foreground md:inline">
                                       <Link to={uat.link}>Click aquí para acceder</Link>
                                     </div>
                                   </TableCell>
+
+                                  {/* Columna de estados */}
                                   <TableCell className="hidden sm:table-cell">
                                     <Badge
                                       className="text-xs"
@@ -439,8 +569,33 @@ function Dashboard() {
                                       {uat.status}
                                     </Badge>
                                   </TableCell>
+
+                                  {/* Columna de Fecha */}
                                   <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+
+                                  {/* Columna de OSA */}
                                   <TableCell className="text-right">{uat.osa}</TableCell>
+
+                                  {/* Columna de acciones */}
+                                  <TableCell>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                          <span className="sr-only">Toggle menu</span>
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
+                                        >
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </TableCell>
                                 </TableRow>
                               )
                             )
@@ -466,7 +621,10 @@ function Dashboard() {
                             <TableHead>Scripting</TableHead>
                             <TableHead className="hidden sm:table-cell">Estado</TableHead>
                             <TableHead className="hidden md:table-cell">Fecha</TableHead>
-                            <TableHead className="text-right">OSA</TableHead>
+                            <TableHead className="hidden md:table-cell">OSA</TableHead>
+                            <TableHead>
+                              <span className="sr-only">Actions</span>
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         {/* CUERPO DE LA TABLA */}
@@ -480,12 +638,15 @@ function Dashboard() {
                                 console.log("UAT Impresa: ", uat),
                                 (
                                   <TableRow key={uat.id}>
+                                    {/* Columna de Scripting */}
                                     <TableCell>
                                       <div className="font-medium">{uat.script}</div>
                                       <div className="hidden text-sm text-muted-foreground md:inline">
                                         <Link to={uat.link}>Click aquí para acceder</Link>
                                       </div>
                                     </TableCell>
+
+                                    {/* Columna de Estados */}
                                     <TableCell className="hidden sm:table-cell">
                                       <Badge
                                         className="text-xs"
@@ -500,8 +661,33 @@ function Dashboard() {
                                         {uat.status}
                                       </Badge>
                                     </TableCell>
+
+                                    {/* Columna de Fecha */}
                                     <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+
+                                    {/* Columna de OSA */}
                                     <TableCell className="text-right">{uat.osa}</TableCell>
+
+                                    {/* Columna de acciones */}
+                                    <TableCell>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Toggle menu</span>
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
+                                          >
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
                                   </TableRow>
                                 )
                               )
@@ -527,7 +713,10 @@ function Dashboard() {
                             <TableHead>Scripting</TableHead>
                             <TableHead className="hidden sm:table-cell">Estado</TableHead>
                             <TableHead className="hidden md:table-cell">Fecha</TableHead>
-                            <TableHead className="text-right">OSA</TableHead>
+                            <TableHead className="hidden md:table-cell">OSA</TableHead>
+                            <TableHead>
+                              <span className="sr-only">Actions</span>
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         {/* CUERPO DE LA TABLA */}
@@ -541,12 +730,15 @@ function Dashboard() {
                                 console.log("UAT Impresa: ", uat),
                                 (
                                   <TableRow key={uat.id}>
+                                    {/* Columna de Scripting */}
                                     <TableCell>
                                       <div className="font-medium">{uat.script}</div>
                                       <div className="hidden text-sm text-muted-foreground md:inline">
                                         <Link to={uat.link}>Click aquí para acceder</Link>
                                       </div>
                                     </TableCell>
+
+                                    {/* Columna de Estados */}
                                     <TableCell className="hidden sm:table-cell">
                                       <Badge
                                         className="text-xs"
@@ -561,8 +753,33 @@ function Dashboard() {
                                         {uat.status}
                                       </Badge>
                                     </TableCell>
+
+                                    {/* Columna de Fecha */}
                                     <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+
+                                    {/* Columna de OSA */}
                                     <TableCell className="text-right">{uat.osa}</TableCell>
+
+                                    {/* Columna de acciones */}
+                                    <TableCell>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Toggle menu</span>
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
+                                          >
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
                                   </TableRow>
                                 )
                               )
@@ -588,7 +805,10 @@ function Dashboard() {
                             <TableHead>Scripting</TableHead>
                             <TableHead className="hidden sm:table-cell">Estado</TableHead>
                             <TableHead className="hidden md:table-cell">Fecha</TableHead>
-                            <TableHead className="text-right">OSA</TableHead>
+                            <TableHead className="hidden md:table-cell">OSA</TableHead>
+                            <TableHead>
+                              <span className="sr-only">Actions</span>
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         {/* CUERPO DE LA TABLA */}
@@ -602,12 +822,15 @@ function Dashboard() {
                                 console.log("UAT Impresa: ", uat),
                                 (
                                   <TableRow key={uat.id}>
+                                    {/* Columna de Scripting */}
                                     <TableCell>
                                       <div className="font-medium">{uat.script}</div>
                                       <div className="hidden text-sm text-muted-foreground md:inline">
                                         <Link to={uat.link}>Click aquí para acceder</Link>
                                       </div>
                                     </TableCell>
+
+                                    {/* Columna de Estados */}
                                     <TableCell className="hidden sm:table-cell">
                                       <Badge
                                         className="text-xs"
@@ -622,8 +845,33 @@ function Dashboard() {
                                         {uat.status}
                                       </Badge>
                                     </TableCell>
+
+                                    {/* Columna de Fecha */}
                                     <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
+
+                                    {/* Columna de OSA */}
                                     <TableCell className="text-right">{uat.osa}</TableCell>
+
+                                    {/* Columna de acciones */}
+                                    <TableCell>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Toggle menu</span>
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
+                                          >
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
                                   </TableRow>
                                 )
                               )

@@ -126,8 +126,8 @@ const insertUser = (userName, userEmail, userPicture, userMatricula) => {
   });
 };
 
-// Extraer las UAT del usuario
-const getUserUATsByEmail = (email) => {
+// Extraer todas las UAT del usuario usando su email
+const getAllUserUATsByEmail = (email) => {
   return new Promise((resolve, reject) => {
     // Primero, obtén el userId basado en el email
     db.get(`SELECT id FROM users WHERE email = ?`, [email], (err, user) => {
@@ -153,6 +153,58 @@ const getUserUATsByEmail = (email) => {
   });
 };
 
+// Extraer una unica UAT del usuario usando su userId (NO EN USO, PENSADA PARA ENCONTRAR UAT. PARA BUSQUEDA EN CLIENTE)
+const getUserUATByParams = (userId, script, link, osa) => {
+  return new Promise((resolve, reject) => {
+    // Busca una UAT específica para el userId dado y que coincida con los parámetros proporcionados
+    db.get(
+      `SELECT * FROM uat_collection WHERE user_id = ? AND script = ? AND link = ? AND osa = ?`,
+      [userId, script, link, osa],
+      (err, row) => {
+        if (err) {
+          console.error("Error al obtener la UAT:", err.message);
+          reject(err);
+        } else if (row) {
+          // UAT encontrada
+          console.info("UAT encontrada:", row);
+          resolve(row);
+        } else {
+          // Si no hay UAT que coincida con esos parámetros, devuelve null
+          console.warn("No se encontró ninguna UAT que coincida con los parámetros proporcionados.");
+          resolve(null);
+        }
+      }
+    );
+  });
+};
+
+// Elimina de la Base de Datos una UAT segun el usuario al que pertenece , su script, link y osa
+const deleteUserUATById = (userId, script, link, osa) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Primero, obtén la UAT usando los parámetros dados para obtener la id específica
+      const uat = await getUserUATByParams(userId, script, link, osa);
+      if (uat) {
+        // Si la UAT existe, procede a eliminarla usando su id
+        db.run(`DELETE FROM uat_collection WHERE id = ?`, [uat.id], function (err) {
+          if (err) {
+            console.error("Error al eliminar la UAT:", err.message);
+            reject(err);
+          } else {
+            console.log(`UAT con id ${uat.id} eliminada correctamente.`);
+            resolve(this.changes); // this.changes devuelve el número de filas afectadas
+          }
+        });
+      } else {
+        console.log("No se encontró la UAT con los parámetros dados.");
+        resolve(0); // No se encontró la UAT, por lo tanto, no se eliminó ninguna fila
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 // Insertar una nueva UAT en la colección de UATs del usuario. Resuelve su ID.
 const insertUatCollection = (userId, script, link, osa, status) => {
   return new Promise((resolve, reject) => {
@@ -171,6 +223,39 @@ const insertUatCollection = (userId, script, link, osa, status) => {
   });
 };
 
+// Obtener el número de UATs por estado de un usuario
+const getUserUATsStatusCountsByEmail = (email) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const uats = await getAllUserUATsByEmail(email);
+      if (uats.length === 0) {
+        // Si no hay UATs para el usuario, devuelve un arreglo vacío
+        resolve([]);
+        return;
+      }
+
+      // Procesa los resultados para contar los estados
+      const counts = uats.reduce((acc, uat) => {
+        acc[uat.status] = (acc[uat.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Convierte el objeto de conteos en un array de objetos para incluir los porcentajes
+      const total = uats.length;
+      const stats = Object.keys(counts).map((status) => ({
+        status,
+        count: counts[status],
+        percentage: ((counts[status] / total) * 100).toFixed(2) + "%",
+      }));
+
+      resolve(stats);
+    } catch (error) {
+      console.error("Error al obtener las estadísticas de UATs por email:", error);
+      reject(error);
+    }
+  });
+};
+
 export {
   db,
   initializeDatabase,
@@ -178,8 +263,11 @@ export {
   searchUserByEmail,
   searchUserByUsername,
   insertUser,
-  getUserUATsByEmail,
+  getAllUserUATsByEmail,
+  getUserUATByParams,
+  deleteUserUATById,
   insertUatCollection,
+  getUserUATsStatusCountsByEmail,
 };
 
 // USAR CLASES

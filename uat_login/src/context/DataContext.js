@@ -72,14 +72,78 @@ export const DataProvider = ({ children }) => {
     } catch (error) {
       // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
       console.error("Error al obtener todos los UATs: ", error);
-      throw error; // Puede lanzar el error para manejarlo más arriba en la cadena de promesas o manejarlo aquí.
+      throw error;
+    }
+  };
+
+  // Elimina una UAT de la base de datos y responde con un ok
+  const removeUAT = async (uatScript, uatLink, uatOSA) => {
+    console.log("Eliminando UAT");
+
+    try {
+      if (authState.status !== "authenticated") {
+        throw new Error("Usuario no autenticado");
+      }
+
+      const response = await fetch("http://localhost:8080/api/delete_uat_data", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`,
+        },
+        body: JSON.stringify({ uatLink, uatScript, uatOSA }),
+      });
+
+      if (!response.ok) {
+        // Podemos capturar más detalles del error si la respuesta incluye un cuerpo
+        const errorBody = await response.text();
+        throw new Error(`Error al guardar los datos: ${errorBody}`);
+      }
+
+      console.log("Respuesta del servidor al eliminar la UAT: ", response);
+      return true; // Si response.ok es true, entonces la operación fue exitosa
+    } catch (error) {
+      // Aquí manejamos cualquier error que haya sido lanzado en el bloque try
+      console.error("Ha ocurrido un error en removeUAT: ", error.message);
+      return false; // Indicar que la operación no fue exitosa
     }
   };
 
   // EN DESARROLLO
-  const deleteUAT = async (uatLink, uatScript, uatOSA) => {
-    console.log("Eliminando UAT");
+  const getUATstadistics = async () => {
+    console.log("Obteniendo estadisticas de las UATs");
+    try {
+      if (authState.status !== "authenticated") {
+        throw new Error("Usuario no autenticado");
+      }
+      const response = await fetch("http://localhost:8080/api/stadistics", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`,
+        },
+      });
+
+      console.warn("Estadisticas de las UATs: ", response);
+
+      if (!response.ok) {
+        // Si la respuesta no es satisfactoria, lanza un error.
+        const errorBody = await response.text();
+        throw new Error(`Error al obtener los datos: ${errorBody}`);
+      }
+
+      // Si la respuesta es satisfactoria, procesa y devuelve los datos.
+      const data = await response.json();
+      console.log("Estadisticas UATs: ", data.data);
+      return data.data; // Devuelve el arreglo de UATs Stadistics
+    } catch (error) {
+      // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
+      console.error("Error al obtener las estadisticas de las UATs: ", error);
+      throw error;
+    }
   };
 
-  return <DataContext.Provider value={{ saveUAT, getAllUATs }}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT }}>{children}</DataContext.Provider>
+  );
 };

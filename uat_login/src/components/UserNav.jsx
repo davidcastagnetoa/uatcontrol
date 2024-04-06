@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import AuthContext from "../context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -14,6 +15,7 @@ import {
 } from "./ui/dropdown-menu";
 
 export function UserNav() {
+  const navigate = useNavigate();
   const { authState, logout } = useContext(AuthContext);
 
   console.log("Valor de authState: " + JSON.stringify(authState));
@@ -47,17 +49,20 @@ export function UserNav() {
 
         <DropdownMenuGroup>
           {/* Perfil */}
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate("/profile")}>
             Perfil
             <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </DropdownMenuItem>
+
           {/* Configuración */}
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate("/settings")}>
             Configuración
             <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+
         <DropdownMenuSeparator />
+
         {/* Cerrar Sesion */}
         <DropdownMenuItem onClick={logout}>
           Log out

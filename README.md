@@ -29,7 +29,7 @@ El proyecto se divide en dos partes principales: el cliente (frontend) y el serv
 
     - ****Routes**: Contiene las rutas para la gestión de usuarios, dashboard y autenticación.**
         - ***authRoutes.js***: *Gestiona la autenticación y entrega de tokens.*
-        - ***userRoutes.js***: *Permite operaciones relacionadas con los datos del usuario.*
+        - ***userDataRoutes.js***: *Permite operaciones relacionadas con los datos del usuario.*
         - ***dashboardRoutes.js***: *Accesible tras la autenticación, para la gestión de enlaces.*
 
     - ****Controllers**: Contiene la lógica para cada ruta.**
@@ -39,6 +39,9 @@ El proyecto se divide en dos partes principales: el cliente (frontend) y el serv
 
     - ****Middleware**:**
         - ***authMiddleware.js***: *Verifica la identidad del usuario mediante un token, asegurando que solo los usuarios autenticados accedan a ciertas rutas.*
+
+    - ****Utils**:**
+        - ***db.js***: *Maneja todas las funciones especificas que manipulan directamente la base de datos, la base de datos usada es SQLite.*
 ## Instalación
 
 Para utilizar LinkKeeper, siga estos pasos:

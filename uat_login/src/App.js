@@ -10,6 +10,7 @@ import { DataProvider } from "./context/DataContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { MicrosoftAuthRedirect } from "./components/MicrosoftAuthRedirect";
 import NotFoundPage from "./components/NotFoundPage";
+import { TooltipProvider } from "./components/ui/tooltip";
 
 // Google Provider Data
 const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
