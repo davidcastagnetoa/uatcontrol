@@ -18,7 +18,12 @@ function SignUp() {
   const [openToaster, setOpenToaster] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [credentials, setCredentials] = useState({ username: "", email: "", matricula: "", password: "" });
+  const [credentials, setCredentials] = useState({
+    username: "",
+    email: "",
+    matricula: "",
+    password: "",
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -67,7 +72,9 @@ function SignUp() {
         console.log("Redirigiendo a dashboard");
         navigate("/dashboard", { replace: true });
       } else {
-        throw new Error("No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider .");
+        throw new Error(
+          "No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider ."
+        );
       }
     } catch (error) {
       console.error("Error during server authentication:", error);
@@ -95,7 +102,8 @@ function SignUp() {
     console.log(error);
 
     try {
-      // login es una función asíncrona, en AuthProvider.js que devuelve un booleano, despues de comprobar en el servidor, una vez comprobado se trae un true o false
+      // login es una función asíncrona, en AuthProvider.js que devuelve un booleano,
+      // despues de comprobar en el servidor, una vez comprobado se trae un true o false
       const success = await signup(
         credentials.username,
         credentials.email,
@@ -136,7 +144,9 @@ function SignUp() {
           <ModeToggle />
           <div className="grid gap-2 text-center">
             <h1 className="text-3xl font-bold">Sign Up</h1>
-            <p className="text-balance text-muted-foreground">Introduce tus datos para crear una cuenta</p>
+            <p className="text-balance text-muted-foreground">
+              Introduce tus datos para crear una cuenta
+            </p>
           </div>
           {/* Form to handle user submission */}
           <form onSubmit={handleSubmit}>
