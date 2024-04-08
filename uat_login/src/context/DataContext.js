@@ -110,6 +110,7 @@ export const DataProvider = ({ children }) => {
   };
 
   // EN DESARROLLO
+  // Obtiene las estadiscticas de las UATs de la base de datos y los devuelve en un arreglo.
   const getUATstadistics = async () => {
     console.log("Obteniendo estadisticas de las UATs");
     try {
@@ -144,6 +145,8 @@ export const DataProvider = ({ children }) => {
   };
 
   return (
-    <DataContext.Provider value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT }}>{children}</DataContext.Provider>
+    <DataContext.Provider value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT }}>
+      {children}
+    </DataContext.Provider>
   );
 };
