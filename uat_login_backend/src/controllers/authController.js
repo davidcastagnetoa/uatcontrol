@@ -44,7 +44,7 @@ export const login = async (req, res) => {
 
   // Verificar el usuario en la base de datos junto con su método de autenticación local
   db.get(
-    `SELECT users.username, users.email, users.picture, users.matricula, auth_methods.auth_details
+    `SELECT users.username, users.email, users.picture, users.matricula, users.usergroup, auth_methods.auth_details
   FROM users
   JOIN auth_methods ON users.id = auth_methods.user_id
   WHERE users.username = ? AND auth_methods.auth_type = 'local'`,
@@ -79,6 +79,7 @@ export const login = async (req, res) => {
         console.debug("Email encontrado:", row.email);
         console.debug("Imagen de perfil encontrada:", row.picture);
         console.debug("Matricula Encontrada:", row.matricula);
+        console.debug("Roll de usuario encontrado:", row.usergroup);
 
         res.json({
           token,
@@ -148,7 +149,8 @@ export const signup = async (req, res) => {
   const salt = bcrypt.genSaltSync(10);
   const passwordHash = bcrypt.hashSync(password, salt);
 
-  const userPicture = "/default_avatar_route.png"; // EN DESARROLLO
+  const userPicture = "/default_avatar_route.png"; // EN DESARROLLO, SE ENVIARAN DESDE EL CLIENTE
+  const userRoll = "usuario"; // Por defecto  todos los usuarios son default, solo los administradores pueden cambiar el roll de los usuarios
 
   // Buscar si el usuario ya existe en la base de datos por email
   db.get(`SELECT id FROM users WHERE email = ?`, [email], (err, row) => {
@@ -164,8 +166,8 @@ export const signup = async (req, res) => {
     } else {
       // El usuario no existe, proceder con la inserción
       db.run(
-        `INSERT INTO users (username, matricula, email, picture) VALUES (?, ?, ?, ?)`,
-        [username, matricula, email, userPicture],
+        `INSERT INTO users (username, matricula, email, picture, usergroup) VALUES (?, ?, ?, ?, ?)`,
+        [username, matricula, email, userPicture, userRoll],
         function (err) {
           if (err) {
             console.error("Error al insertar el usuario:", err.message);
@@ -193,6 +195,7 @@ export const signup = async (req, res) => {
               console.debug("Email Creado:", email);
               console.debug("Picture Creado:", userPicture);
               console.debug("Matricula Creada:", matricula);
+              console.debug("Roll de Usuario Creado:", userRoll);
 
               res.status(201).json({
                 message: "Usuario creado exitosamente",
@@ -246,6 +249,7 @@ export const loginWithMicrosoft = async (req, res) => {
     let userEmail = payload.mail || payload.userPrincipalName;
     let userMatricula = "unregistered";
     let userPicture = "/default_avatar_route.png"; // EN DESARROLLO
+    let userRoll = "usuario"; // Por defecto  todos los usuarios son default, solo los administradores pueden cambiar el roll de los usuarios
 
     console.debug("Contenido de payload de Microsoft: ", payload);
 
@@ -254,16 +258,17 @@ export const loginWithMicrosoft = async (req, res) => {
 
     if (!row) {
       // Usuario de Microsoft no existe, insertamos al nuevo usuario
-      const userId = await insertUser(userName, userEmail, userPicture, userMatricula);
+      const userId = await insertUser(userName, userEmail, userPicture, userMatricula, userRoll);
       console.log(`Usuario nuevo insertado con ID: ${userId}`);
     } else {
       // Usuario de Microsoft ya existe, actualizar variables con datos de `row`
       console.debug("Usuario encontrado, valores de row: ", row);
 
-      userName = row.username;
-      userMatricula = row.matricula;
-      userEmail = row.email;
-      userPicture = row.picture;
+      userName = row?.username;
+      userMatricula = row?.matricula;
+      userEmail = row?.email;
+      userPicture = row?.picture;
+      userRoll = row?.usergroup;
     }
 
     // Generamos un token JWT
@@ -289,6 +294,7 @@ export const loginWithMicrosoft = async (req, res) => {
         email: userEmail,
         picture: userPicture,
         matricula: userMatricula,
+        rol: userRoll,
       },
     });
   } catch (err) {
@@ -331,22 +337,24 @@ export const loginWithGoogle = async (req, res) => {
     console.debug("\nControlador loginWithGoogle: Ejecutando siguiente try");
     let { name: userName, email: userEmail, picture: userPicture } = payload;
     let userMatricula = "unregistered";
+    let userRoll = "usuario"; // Por defecto  todos los usuarios son default, solo los administradores pueden cambiar el roll de los usuarios
 
     // Buscamos al usuario en la base de datos por email de Google
     let row = await searchUserByEmail(userEmail);
 
     if (!row) {
       // Usuario de Google no existe, insertamos al nuevo usuario
-      const userId = await insertUser(userName, userEmail, userPicture, userMatricula);
+      const userId = await insertUser(userName, userEmail, userPicture, userMatricula, userRoll);
       console.log(`Usuario nuevo insertado con ID: ${userId}`);
     } else {
       // Usuario de Google ya existe, actualizar variables con datos de `row`
       console.debug("Usuario encontrado, valores de row: ", row);
 
-      userName = row.username;
-      userMatricula = row.matricula;
-      userEmail = row.email;
-      userPicture = row.picture;
+      userName = row?.username;
+      userMatricula = row?.matricula;
+      userEmail = row?.email;
+      userPicture = row?.picture;
+      userRoll = row?.usergroup;
     }
 
     // Generamos un token JWT
@@ -371,6 +379,7 @@ export const loginWithGoogle = async (req, res) => {
         email: userEmail,
         picture: userPicture,
         matricula: userMatricula,
+        rol: userRoll,
       },
     });
   } catch (err) {

@@ -4,6 +4,8 @@ import Login from "./components/Login";
 import SignUp from "./components/SignUp";
 import AuthProvider from "./components/AuthProvider";
 import Dashboard from "./components/Dashboard";
+import Profile from "./components/Profile";
+import UserList from "./components/UserList";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./context/ThemeProvider";
 import { DataProvider } from "./context/DataContext";
@@ -33,6 +35,22 @@ function App() {
                   element={
                     <ProtectedRoute redirectTo="/login">
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route // UI en desarrollo
+                  path="/profile"
+                  element={
+                    <ProtectedRoute redirectTo="/login">
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route // UI en desarrollo
+                  path="/users"
+                  element={
+                    <ProtectedRoute redirectTo="/login">
+                      <UserList />
                     </ProtectedRoute>
                   }
                 />

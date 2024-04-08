@@ -24,16 +24,16 @@ router.post("/auth/microsoft", loginWithMicrosoft);
 // Autenticación OAuth con Google
 router.post("/auth/google", loginWithGoogle);
 
-// Refresh Token de Google, EN DESARROLLO, NO EN USO
-router.post("/auth/google/refresh-token", async (req, res) => {
-  try {
-    const user = new UserRefreshClient(CLIENT_ID, CLIENT_SECRET, req.body.refreshToken);
-    const { credentials } = await user.refreshAccessToken(); // optain new tokens
-    res.json(credentials);
-  } catch (err) {
-    console.error("Ha ocurrido un error al verificar el token: " + err);
-    res.status(401).send("Unauthorized");
-  }
-});
+// // Refresh Token de Google, EN DESARROLLO, NO EN USO
+// router.post("/auth/google/refresh-token", async (req, res) => {
+//   try {
+//     const user = new UserRefreshClient(CLIENT_ID, CLIENT_SECRET, req.body.refreshToken);
+//     const { credentials } = await user.refreshAccessToken(); // optain new tokens
+//     res.json(credentials);
+//   } catch (err) {
+//     console.error("Ha ocurrido un error al verificar el token: " + err);
+//     res.status(401).send("Unauthorized");
+//   }
+// });
 
 export default router;

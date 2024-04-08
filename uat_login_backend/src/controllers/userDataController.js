@@ -41,7 +41,7 @@ export const saveUserUAT = async (req, res) => {
       // // NO DISPONIBLE, Experimental, si el usuario no existe se crea uno nuevo
       // console.debug("\nControlador saveUserUAT: Ejecutando siguiente try, insertando nuevo usuario");
       // console.debug("El usuario no existe, insertando usuario...");
-      // const userId = await insertUser(uatUsername, userEmail, userPicture, userMatricula);
+      // const userId = await insertUser(uatUsername, userEmail, userPicture, userMatricula, userRoll);
       // console.debug("Nuevo usuario insertado, userId:", userId);
       // console.log("Insertando UAT...");
       // const UATinserted = await insertUatCollection(userId, uatScript, uatLink, uatOSA, uatStatus);
@@ -157,16 +157,60 @@ export const removeUserUAT = async (req, res) => {
   }
 };
 
-// EN DESARROLLO :
 // Controlador para obtener datos de perfil del usuario
 export const getUserProfile = async (req, res) => {
+  console.log("..:: Obteniendo datos del Usuario ::..");
+  // DATOS A USAR
   // Pasa por el middleware para identificar al usuario
   console.debug("Datos decodificados desde Middleware: ", req.user);
-  // Buscamos al cliente con el email encontrado en el middleware
-  // Buscamos el id del usuario  en la BD a partir del email
-  // Si no existe el usuario, devuelve un error
-  //  Si existe, continua y busca el resto de datos personales no codificados en el middleware
+
+  // Email de usuario
+  const userEmail = req.user.email;
+  console.debug("Email encontrado: ", userEmail);
+
+  let row;
+
+  // Primero, intenta obtener el user_id del usuario existente, mediante su email
+  try {
+    console.debug("\nControlador getUserProfile: Ejecutando try principal de busqueda de usuario");
+    row = await searchUserByEmail(userEmail);
+    console.log(`Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`);
+  } catch (err) {
+    console.error("Error al buscar el usuario:", err.message);
+    return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
+  }
+
+  try {
+    console.debug("\nControlador getUserProfile: Ejecutando siguiente try, enviando datos de usuario");
+
+    // Si el usuario no existe, devuelve un error
+    if (!row) {
+      throw new Error("El usuario no existe, no se puede obtener los datos de un usuario inexistente");
+    }
+
+    // El usuario existe, usa su id existente para encontrar la UAT
+    const userName = row.username;
+    const userPicture = row.picture;
+    const userMatricula = row.matricula;
+    const userRoll = row.usergroup;
+
+    let userData = {
+      username: userName,
+      matricula: userMatricula,
+      picture: userPicture,
+      email: userEmail,
+      privilegio: userRoll,
+    };
+
+    // Enviamos la respuesta
+    res.json(userData);
+  } catch (err) {
+    console.error("Error al obtener los datos del usuario: ", err);
+    return res.status(500).send("Internal Server Error");
+  }
 };
+
+// EN DESARROLLO :
 
 // Controlador para actualizar datos de perfil del usuario
 export const updateUserProfile = async (req, res) => {

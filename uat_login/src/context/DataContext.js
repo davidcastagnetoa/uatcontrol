@@ -67,7 +67,7 @@ export const DataProvider = ({ children }) => {
 
       // Si la respuesta es satisfactoria, procesa y devuelve los datos.
       const data = await response.json();
-      console.log("UATs obtenidas: ", data.userUAT);
+      console.log("UATs obtenidas del servidor: ", data.userUAT);
       return data.userUAT; // Devuelve el arreglo de UATs.
     } catch (error) {
       // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
@@ -109,7 +109,6 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // EN DESARROLLO
   // Obtiene las estadiscticas de las UATs de la base de datos y los devuelve en un arreglo.
   const getUATstadistics = async () => {
     console.log("Obteniendo estadisticas de las UATs");
@@ -144,8 +143,88 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  // Obtiene los datos de perfil del usuario logado
+  const getUserData = async () => {
+    console.log("Obteniendo datos del usuario");
+
+    if (authState.status !== "authenticated") {
+      throw new Error("Usuario no autenticado");
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/api/profile", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`,
+        },
+      });
+
+      console.warn("Respuesta del servidor los datos del usuario: ", response);
+
+      if (!response.ok) {
+        // Si la respuesta no es satisfactoria, lanza un error.
+        const errorBody = await response.text();
+        throw new Error(`Error al obtener los datos: ${errorBody}`);
+      }
+
+      // Si la respuesta es satisfactoria, procesa y devuelve los datos.
+      const userData = await response.json();
+      console.log("Datos de Usuario: ", userData);
+      return userData; // Devuelve el objeto
+    } catch (err) {
+      // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
+      console.error("Error al obtener los datos del usuario: ", err);
+      throw err;
+    }
+  };
+
+  // EN DESARROLLO
+  // Obtiene el listado de todos los usuarios de la DB, solo para usuarios con privilegios de administrador
+  const getAllUsers = async () => {
+    console.log("Obteniendo Listado de usuarios");
+
+    if (authState.status !== "authenticated") {
+      throw new Error("Usuario no autenticado");
+    }
+    try {
+      const response = await fetch("http://localhost:8080/api/user_lists", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`,
+        },
+      });
+
+      console.warn("Respuesta del servidor los datos del usuario: ", response);
+
+      if (!response.ok) {
+        // Maneja la respuesta no satisfactoria según el código de estado HTTP
+        const errorBody = await response.text();
+
+        // Específicamente para un código 403
+        if (response.status === 403) {
+          console.error("Acceso denegado. No tienes privilegios de administrador.");
+          throw new Error("Acceso denegado. No tienes privilegios de administrador.");
+        }
+
+        // Para otros códigos de error
+        throw new Error(`Error al obtener los datos: ${errorBody}`);
+      }
+
+      // Si la respuesta es satisfactoria, procesa y devuelve los datos.
+      const data = await response.json();
+      console.log("Datos de Usuario obtenidos: ", data.userRows);
+      return data.userRows; // Devuelve el arreglo de UATs.
+    } catch (err) {
+      // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
+      console.error("Error al obtener los datos del usuario: ", err);
+      throw err;
+    }
+  };
+
   return (
-    <DataContext.Provider value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT }}>
+    <DataContext.Provider value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT, getUserData, getAllUsers }}>
       {children}
     </DataContext.Provider>
   );

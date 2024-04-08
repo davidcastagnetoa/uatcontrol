@@ -57,6 +57,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ScrollArea } from "./ui/scroll-area.jsx";
+import { useNavigate } from "react-router-dom";
 
 import {
   AlertDialog,
@@ -72,7 +73,8 @@ import moment from "moment";
 import "moment/locale/es";
 
 function Dashboard() {
-  const { saveUAT, getAllUATs, getUATstadistics, removeUAT } = useContext(DataContext);
+  const navigate = useNavigate();
+  const { saveUAT, getAllUATs, getUATstadistics, getUserData, removeUAT } = useContext(DataContext);
   const { authState } = useContext(AuthContext);
   const [uatData, setUatData] = useState({
     uat_link: "",
@@ -85,17 +87,13 @@ function Dashboard() {
   const [error, setError] = useState("");
   const [openToaster, setOpenToaster] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // Función para abrir el AlertDialog
-  const openDialog = () => setIsDialogOpen(true);
+  const [userData, setUserData] = useState({});
+  const [userStatus, setUserStatus] = useState(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
+  const [openDialogId, setOpenDialogId] = useState(null);
 
   const { toast } = useToast();
   moment.locale("es");
   const today = moment().format("D [de] MMMM [de] YYYY");
-
-  console.log("Valor de authState: " + JSON.stringify(authState));
-  console.log("authState.user: ", authState.user);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -104,6 +102,11 @@ function Dashboard() {
       [name]: value,
     }));
   };
+
+  // useEffect se ejecutará después de cada renderizado cuando uatData cambie. Se usa en los Select
+  useEffect(() => {
+    console.warn("uatData: " + JSON.stringify(uatData));
+  }, [uatData]); // Dependencias: Este efecto depende de uatData.
 
   // Guarda una UAT en el servidor
   const handleSaveUat = async (event) => {
@@ -120,12 +123,7 @@ function Dashboard() {
         throw new Error("Rellene todos los campos.");
       }
       // Aqui envias los datos al servidor para almacenarlos en la base de datos
-      const saveUat = await saveUAT(
-        uatData.uat_link,
-        uatData.uat_script,
-        uatData.uat_osa,
-        uatData.uat_status
-      );
+      const saveUat = await saveUAT(uatData.uat_link, uatData.uat_script, uatData.uat_osa, uatData.uat_status);
       if (saveUat) {
         console.log("UAT guardada correctamente: ", saveUat);
         toast({
@@ -134,7 +132,9 @@ function Dashboard() {
           // description: "",
           open: { openToaster },
         });
+
         setUatData({ uat_link: "", uat_osa: "" });
+
         setOpenToaster(true);
       } else {
         throw new Error("No hay respuesta por parte del servidor. Intente más tarde.");
@@ -157,7 +157,7 @@ function Dashboard() {
     } finally {
       handleGetAllUATs();
       handleGetStadisticsUATs();
-      setIsLoading(false); // Termina el indicador de carga
+      setIsLoading(false);
     }
   };
 
@@ -207,7 +207,7 @@ function Dashboard() {
       handleGetAllUATs(); // Actualiza el listado de UATs en Dashboard
       handleGetStadisticsUATs(); // Actualiza el listado de Estadisticas en Dashboard
       setIsLoading(false); // Termina el indicador de carga
-      setIsDialogOpen(false); //Cierra el AlertDialog
+      setOpenDialogId(null); //Cierra el AlertDialog
     }
   };
 
@@ -234,14 +234,37 @@ function Dashboard() {
     }
   }, [getUATstadistics]);
 
-  console.log("Valor de uats: " + JSON.stringify(uats));
-  console.log("Valor de uatStats: " + JSON.stringify(uatStats));
+  // Importa las UATs del servidor
+  const handleGetUserData = useCallback(async () => {
+    try {
+      const user_data = await getUserData(); // getAllUATs() es la función que recuperará las UATs¨
+      // console.debug("Datos de usuario recuperados:", user_data);
+      setUserData(user_data);
+      console.log("Datos de usuario en userData:", userData);
+    } catch (error) {
+      console.error("Hubo un problema al recuperar los datos del usuario:", error);
+    }
+  }, [getUserData]);
 
   // Actiualiza los datos del Contexto DataContext
   useEffect(() => {
     handleGetAllUATs(); // Actualiza las UATs disponibles,
     handleGetStadisticsUATs(); // Actualiza las estadisticas de las UATs disponibles,
-  }, [handleGetAllUATs, handleGetStadisticsUATs]);
+    handleGetUserData(); // Actualiza los datos del usuario disponibles
+  }, [handleGetAllUATs, handleGetStadisticsUATs, handleGetUserData]);
+
+  // Opcional: Si userData puede cambiar y
+  // quieres que userStatus se actualice en consecuencia, puedes usar useEffect
+  useEffect(() => {
+    setUserStatus(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
+  }, [userData]);
+
+  //DEBUGGING
+  console.log("Valor de authState: " + JSON.stringify(authState));
+  console.log("authState.user: ", authState.user);
+  console.log("Valor de uats: " + JSON.stringify(uats));
+  console.log("Valor de uatStats: " + JSON.stringify(uatStats));
+  console.log("Privilegios de usuario: " + userStatus);
 
   return (
     <TooltipProvider>
@@ -456,18 +479,20 @@ function Dashboard() {
               {/* TARJETAS SUPERIORES */}
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
                 {/* TARJETA 1 */}
-                <Card className="sm:col-span-2">
-                  <CardHeader className="pb-3">
-                    <CardTitle>Permisos de usuarios</CardTitle>
-                    <CardDescription className="max-w-lg text-balance leading-relaxed">
-                      Modifica aqui los permisos de los técnicos de procesos registrados y las UATs
-                      a las que tienen acceso.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter>
-                    <Button>Modificar Permisos</Button>
-                  </CardFooter>
-                </Card>
+                {userStatus === "Administrador" && (
+                  <Card className="sm:col-span-2">
+                    <CardHeader className="pb-3">
+                      <CardTitle>Permisos de los técnicos</CardTitle>
+                      <CardDescription className="max-w-lg text-balance leading-relaxed">
+                        Modifica aquí los permisos de los técnicos de procesos registrados y las UATs a las que tienen
+                        acceso.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter>
+                      <Button onClick={() => navigate("/users")}>Modificar Permisos</Button>
+                    </CardFooter>
+                  </Card>
+                )}
 
                 {/* ESTADISTICAS EN PRODUCCION */}
                 {uatStats
@@ -484,10 +509,7 @@ function Dashboard() {
                         </div>
                       </CardContent>
                       <CardFooter>
-                        <Progress
-                          value={stat.percentage}
-                          aria-label={`${stat.percentage}% increase`}
-                        />
+                        <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
                       </CardFooter>
                     </Card>
                   ))}
@@ -507,10 +529,7 @@ function Dashboard() {
                         </div>
                       </CardContent>
                       <CardFooter>
-                        <Progress
-                          value={stat.percentage}
-                          aria-label={`${stat.percentage}% increase`}
-                        />
+                        <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
                       </CardFooter>
                     </Card>
                   ))}
@@ -529,7 +548,6 @@ function Dashboard() {
                 </div>
 
                 {/* TABLA Todas */}
-
                 <TabsContent value="Todas">
                   <Card>
                     <CardHeader className="px-7">
@@ -600,33 +618,31 @@ function Dashboard() {
                                     <DropdownMenuContent align="end">
                                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                       <DropdownMenuItem>Edit</DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={openDialog}>
+                                      <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>
                                         Delete
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
 
                                   {/* AlertDialog que se controla con el estado `isDialogOpen` */}
-                                  {isDialogOpen && (
-                                    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                  {openDialogId === uat.id && (
+                                    <AlertDialog
+                                      open={openDialogId === uat.id}
+                                      onOpenChange={() => setOpenDialogId(null)}
+                                    >
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>
-                                            Are you absolutely sure?
-                                          </AlertDialogTitle>
+                                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            This action cannot be undone. This preset will no longer
-                                            be accessible by you or others you&apos;ve shared it
-                                            with.
+                                            This action cannot be undone. This preset will no longer be accessible by
+                                            you or others you&apos;ve shared it with.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                                           <Button
                                             variant="destructive"
-                                            onClick={() =>
-                                              handleDeleteUAT(uat.script, uat.link, uat.osa)
-                                            }
+                                            onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                           >
                                             Delete
                                           </Button>
@@ -645,17 +661,18 @@ function Dashboard() {
                   </Card>
                 </TabsContent>
 
-                {/* TABLA En producción */}
+                {/* TABLA  En producción  */}
                 <TabsContent value="En producción">
                   <Card>
                     <CardHeader className="px-7">
                       <CardTitle>UATs</CardTitle>
                       <CardDescription>Enlaces de pruebas de scriptings.</CardDescription>
                     </CardHeader>
+
                     <CardContent>
                       <Table>
-                        {/* CABECERA DE LA TABLA */}
                         <ScrollArea id="ScrollArea">
+                          {/* CABECERA DE LA TABLA */}
                           <TableHeader>
                             <TableRow>
                               <TableHead>Scripting</TableHead>
@@ -668,15 +685,14 @@ function Dashboard() {
                             </TableRow>
                           </TableHeader>
                           {/* CUERPO DE LA TABLA */}
+
                           <TableBody>
-                            {/* Fila 1 */}
-                            {/* <TableRow className="bg-accent"></TableCell>*/}
                             {uats
                               .filter((uat) => uat.status === "En producción")
                               .map((uat) => (
-                                // console.debug("UAT Impresa: ", uat),
+                                // console.debug("UAT En producción Impresa: ", uat),
                                 <TableRow key={uat.id}>
-                                  {/* Columna de Scripting */}
+                                  {/* Columna de scripting */}
                                   <TableCell>
                                     <div className="font-medium">{uat.script}</div>
                                     <div className="hidden text-sm text-muted-foreground md:inline">
@@ -684,7 +700,7 @@ function Dashboard() {
                                     </div>
                                   </TableCell>
 
-                                  {/* Columna de Estados */}
+                                  {/* Columna de estados */}
                                   <TableCell className="hidden sm:table-cell">
                                     <Badge
                                       className="text-xs"
@@ -704,7 +720,7 @@ function Dashboard() {
                                   <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
 
                                   {/* Columna de OSA */}
-                                  <TableCell className="text-right">{uat.osa}</TableCell>
+                                  <TableCell className="hidden md:table-cell">{uat.osa}</TableCell>
 
                                   {/* Columna de acciones */}
                                   <TableCell>
@@ -718,9 +734,38 @@ function Dashboard() {
                                       <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                         <DropdownMenuItem>Edit</DropdownMenuItem>
-                                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>
+                                          Delete
+                                        </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
+
+                                    {/* AlertDialog que se controla con el estado `isDialogOpen` */}
+                                    {openDialogId === uat.id && (
+                                      <AlertDialog
+                                        open={openDialogId === uat.id}
+                                        onOpenChange={() => setOpenDialogId(null)}
+                                      >
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              This action cannot be undone. This preset will no longer be accessible by
+                                              you or others you&apos;ve shared it with.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <Button
+                                              variant="destructive"
+                                              onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
+                                            >
+                                              Delete
+                                            </Button>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -732,17 +777,18 @@ function Dashboard() {
                   </Card>
                 </TabsContent>
 
-                {/* TABLA En revisión */}
+                {/* TABLA  En revisión  */}
                 <TabsContent value="En revisión">
                   <Card>
                     <CardHeader className="px-7">
                       <CardTitle>UATs</CardTitle>
                       <CardDescription>Enlaces de pruebas de scriptings.</CardDescription>
                     </CardHeader>
+
                     <CardContent>
                       <Table>
-                        {/* CABECERA DE LA TABLA */}
                         <ScrollArea id="ScrollArea">
+                          {/* CABECERA DE LA TABLA */}
                           <TableHeader>
                             <TableRow>
                               <TableHead>Scripting</TableHead>
@@ -755,15 +801,14 @@ function Dashboard() {
                             </TableRow>
                           </TableHeader>
                           {/* CUERPO DE LA TABLA */}
+
                           <TableBody>
-                            {/* Fila 1 */}
-                            {/* <TableRow className="bg-accent"></TableCell>*/}
                             {uats
                               .filter((uat) => uat.status === "En revisión")
                               .map((uat) => (
-                                // console.debug("UAT Impresa: ", uat),
+                                // console.debug("UAT En revisión Impresa: ", uat),
                                 <TableRow key={uat.id}>
-                                  {/* Columna de Scripting */}
+                                  {/* Columna de scripting */}
                                   <TableCell>
                                     <div className="font-medium">{uat.script}</div>
                                     <div className="hidden text-sm text-muted-foreground md:inline">
@@ -771,7 +816,7 @@ function Dashboard() {
                                     </div>
                                   </TableCell>
 
-                                  {/* Columna de Estados */}
+                                  {/* Columna de estados */}
                                   <TableCell className="hidden sm:table-cell">
                                     <Badge
                                       className="text-xs"
@@ -791,7 +836,7 @@ function Dashboard() {
                                   <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
 
                                   {/* Columna de OSA */}
-                                  <TableCell className="text-right">{uat.osa}</TableCell>
+                                  <TableCell className="hidden md:table-cell">{uat.osa}</TableCell>
 
                                   {/* Columna de acciones */}
                                   <TableCell>
@@ -805,9 +850,38 @@ function Dashboard() {
                                       <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                         <DropdownMenuItem>Edit</DropdownMenuItem>
-                                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>
+                                          Delete
+                                        </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
+
+                                    {/* AlertDialog que se controla con el estado `isDialogOpen` */}
+                                    {openDialogId === uat.id && (
+                                      <AlertDialog
+                                        open={openDialogId === uat.id}
+                                        onOpenChange={() => setOpenDialogId(null)}
+                                      >
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              This action cannot be undone. This preset will no longer be accessible by
+                                              you or others you&apos;ve shared it with.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <Button
+                                              variant="destructive"
+                                              onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
+                                            >
+                                              Delete
+                                            </Button>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -819,17 +893,18 @@ function Dashboard() {
                   </Card>
                 </TabsContent>
 
-                {/* TABLA En desarrollo */}
+                {/* TABLA  En desarrollo  */}
                 <TabsContent value="En desarrollo">
                   <Card>
                     <CardHeader className="px-7">
                       <CardTitle>UATs</CardTitle>
                       <CardDescription>Enlaces de pruebas de scriptings.</CardDescription>
                     </CardHeader>
+
                     <CardContent>
                       <Table>
-                        {/* CABECERA DE LA TABLA */}
                         <ScrollArea id="ScrollArea">
+                          {/* CABECERA DE LA TABLA */}
                           <TableHeader>
                             <TableRow>
                               <TableHead>Scripting</TableHead>
@@ -842,15 +917,14 @@ function Dashboard() {
                             </TableRow>
                           </TableHeader>
                           {/* CUERPO DE LA TABLA */}
+
                           <TableBody>
-                            {/* Fila 1 */}
-                            {/* <TableRow className="bg-accent"></TableCell>*/}
                             {uats
                               .filter((uat) => uat.status === "En desarrollo")
                               .map((uat) => (
-                                // console.debug("UAT Impresa: ", uat),
+                                // console.debug("UAT En desarrollo Impresa: ", uat),
                                 <TableRow key={uat.id}>
-                                  {/* Columna de Scripting */}
+                                  {/* Columna de scripting */}
                                   <TableCell>
                                     <div className="font-medium">{uat.script}</div>
                                     <div className="hidden text-sm text-muted-foreground md:inline">
@@ -858,7 +932,7 @@ function Dashboard() {
                                     </div>
                                   </TableCell>
 
-                                  {/* Columna de Estados */}
+                                  {/* Columna de estados */}
                                   <TableCell className="hidden sm:table-cell">
                                     <Badge
                                       className="text-xs"
@@ -878,7 +952,7 @@ function Dashboard() {
                                   <TableCell className="hidden md:table-cell">2023-06-23</TableCell>
 
                                   {/* Columna de OSA */}
-                                  <TableCell className="text-right">{uat.osa}</TableCell>
+                                  <TableCell className="hidden md:table-cell">{uat.osa}</TableCell>
 
                                   {/* Columna de acciones */}
                                   <TableCell>
@@ -892,9 +966,38 @@ function Dashboard() {
                                       <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                         <DropdownMenuItem>Edit</DropdownMenuItem>
-                                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>
+                                          Delete
+                                        </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
+
+                                    {/* AlertDialog que se controla con el estado `isDialogOpen` */}
+                                    {openDialogId === uat.id && (
+                                      <AlertDialog
+                                        open={openDialogId === uat.id}
+                                        onOpenChange={() => setOpenDialogId(null)}
+                                      >
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              This action cannot be undone. This preset will no longer be accessible by
+                                              you or others you&apos;ve shared it with.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <Button
+                                              variant="destructive"
+                                              onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
+                                            >
+                                              Delete
+                                            </Button>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -979,14 +1082,10 @@ function Dashboard() {
                         <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           Estado
                         </Label>
-                        <p className="text-[0.8rem] text-muted-foreground">
-                          Selecciona el estado de la OSA
-                        </p>
+                        <p className="text-[0.8rem] text-muted-foreground">Selecciona el estado de la OSA</p>
                         <Select
                           name="uat_status"
-                          onValueChange={(value) =>
-                            handleChange({ target: { name: "uat_status", value } })
-                          }
+                          onValueChange={(value) => handleChange({ target: { name: "uat_status", value } })}
                         >
                           <SelectTrigger id="status" aria-label="Select status">
                             <SelectValue placeholder="Selecciona estado" />
@@ -1004,56 +1103,37 @@ function Dashboard() {
                         <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           Scripting
                         </Label>
-                        <p className="text-[0.8rem] text-muted-foreground">
-                          Introduce scripting al que pertenece
-                        </p>
+                        <p className="text-[0.8rem] text-muted-foreground">Introduce scripting al que pertenece</p>
                         <Select
                           name="uat_script"
-                          onValueChange={(value) =>
-                            handleChange({ target: { name: "uat_script", value } })
-                          }
+                          onValueChange={(value) => handleChange({ target: { name: "uat_script", value } })}
                         >
                           <SelectTrigger id="status" aria-label="Select status">
                             <SelectValue placeholder="Selecciona el Scripting al que pertenece" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="PC Customer Care Completo">
-                              PC Customer Care Completo
-                            </SelectItem>
+                            <SelectItem value="PC Customer Care Completo">PC Customer Care Completo</SelectItem>
                             <SelectItem value="Customer Averías">Customer Averías</SelectItem>
-                            <SelectItem value="Fallo de supervisión">
-                              Fallo de supervisión
-                            </SelectItem>
-                            <SelectItem value="Humanización de Robos">
-                              Humanización de Robos
-                            </SelectItem>
+                            <SelectItem value="Fallo de supervisión">Fallo de supervisión</SelectItem>
+                            <SelectItem value="Humanización de Robos">Humanización de Robos</SelectItem>
                             <SelectItem value="MANTENIMIENTO PILOTO Saltos de alarma">
                               MANTENIMIENTO PILOTO Saltos de alarma
                             </SelectItem>
                             <SelectItem value="No Capta No Salta">No Capta No Salta</SelectItem>
-                            <SelectItem value="Nuevo Proceso Tamper">
-                              Nuevo Proceso Tamper
-                            </SelectItem>
-                            <SelectItem value="Nuevo Proceso de FFAA">
-                              Nuevo Proceso de FFAA
-                            </SelectItem>
+                            <SelectItem value="Nuevo Proceso Tamper">Nuevo Proceso Tamper</SelectItem>
+                            <SelectItem value="Nuevo Proceso de FFAA">Nuevo Proceso de FFAA</SelectItem>
                             <SelectItem value="PCC - ODC">PCC - ODC</SelectItem>
-                            <SelectItem value="Proceso Antiguo Tamper">
-                              Proceso Antiguo Tamper
+                            <SelectItem value="Proceso Antiguo Tamper">Proceso Antiguo Tamper</SelectItem>
+                            <SelectItem value="Proceso cc Ruidos Extraños">Proceso cc Ruidos Extraños</SelectItem>
+                            <SelectItem value="Reclamacion Facturacion Complaints">
+                              Reclamacion Facturacion Complaints
                             </SelectItem>
-                            <SelectItem value="Proceso cc Ruidos Extraños">
-                              Proceso cc Ruidos Extraños
+                            <SelectItem value="Reclamación Facturacion NO Complaints">
+                              Reclamación Facturacion NO Complaints
                             </SelectItem>
-                            <SelectItem value="Reclamación Facturacion">
-                              Reclamación Facturacion
-                            </SelectItem>
-                            <SelectItem value="Reclamación de Bajas">
-                              Reclamación de Bajas
-                            </SelectItem>
+                            <SelectItem value="Reclamación de Bajas">Reclamación de Bajas</SelectItem>
                             <SelectItem value="Saltos de Alarma">Saltos de Alarma</SelectItem>
-                            <SelectItem value="Gestion Chat Customer Service">
-                              Gestion Chat Customer Service
-                            </SelectItem>
+                            <SelectItem value="Gestion Chat Customer Service">Gestion Chat Customer Service</SelectItem>
                             <SelectItem value="Gestión Mails Customer Service">
                               Gestión Mails Customer Service
                             </SelectItem>
@@ -1066,9 +1146,7 @@ function Dashboard() {
                         <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           OSA
                         </Label>
-                        <p className="text-[0.8rem] text-muted-foreground">
-                          Introduce la OSA a la que pertenece
-                        </p>
+                        <p className="text-[0.8rem] text-muted-foreground">Introduce la OSA a la que pertenece</p>
                         <Input
                           id="osa"
                           name="uat_osa"

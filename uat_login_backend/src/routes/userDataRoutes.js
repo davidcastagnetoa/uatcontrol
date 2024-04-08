@@ -1,5 +1,5 @@
 import express from "express";
-import { saveUserUAT, getAllUserUATs, removeUserUAT } from "../controllers/userDataController.js";
+import { saveUserUAT, getAllUserUATs, removeUserUAT, getUserProfile } from "../controllers/userDataController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -13,10 +13,10 @@ router.get("/get_uat_data", verifyToken, getAllUserUATs);
 //Ruta para eliminar una UAT del usuario de la DB
 router.delete("/delete_uat_data", verifyToken, removeUserUAT);
 
-// // EN DESARROLLO
-// //Ruta para obtener datos de perfil del usuario
-// router.get("/profile", verifyToken, getUserProfile);
+//Ruta para obtener datos de perfil del usuario
+router.get("/profile", verifyToken, getUserProfile);
 
+// EN DESARROLLO
 // //Ruta para actualizar datos de perfil del usuario
 // router.put("/profile", verifyToken, updateUserProfile);
 

@@ -35,6 +35,7 @@ const initializeDatabase = () => {
     matricula TEXT,
     email TEXT NOT NULL UNIQUE,
     picture TEXT
+    usergroup TEXT NOT NULL
   )`);
 
   // auth_details TEXT -- Hash de contraseña para 'local', ID de OAuth para 'google'
@@ -109,11 +110,11 @@ const searchUserByUsername = (username) => {
 };
 
 // Inserta un nuevo usuario en la BD. Resuelve su ID
-const insertUser = (userName, userEmail, userPicture, userMatricula) => {
+const insertUser = (userName, userEmail, userPicture, userMatricula, userRoll) => {
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO users (username, email, picture, matricula) VALUES (?, ?, ?, ?)`,
-      [userName, userEmail, userPicture, userMatricula],
+      `INSERT INTO users (username, email, picture, matricula, usergroup) VALUES (?, ?, ?, ?, ?)`,
+      [userName, userEmail, userPicture, userMatricula, userRoll],
       function (err) {
         if (err) {
           console.error("Error al insertar el usuario:", err.message);
@@ -256,6 +257,34 @@ const getUserUATsStatusCountsByEmail = (email) => {
   });
 };
 
+// EN DESARROLLO:
+// Obtener todos los usuarios, solo para administradores
+const getAllUserByAdmin = (email) => {
+  return new Promise((resolve, reject) => {
+    searchUserByEmail(email)
+      .then((user) => {
+        // Verifica si el usuario es administrador
+        if (user.usergroup !== "administrador") {
+          reject(new Error("Acceso denegado. No tienes privilegios de administrador."));
+        } else {
+          // El usuario es administrador, procede a obtener todos los usuarios
+          db.all("SELECT * FROM users", [], (err, rows) => {
+            if (err) {
+              console.error("Error al obtener todos los usuarios:", err.message);
+              reject(err);
+            } else {
+              resolve(rows);
+            }
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error al buscar el usuario por email:", error.message);
+        reject(error);
+      });
+  });
+};
+
 export {
   db,
   initializeDatabase,
@@ -268,6 +297,7 @@ export {
   deleteUserUATById,
   insertUatCollection,
   getUserUATsStatusCountsByEmail,
+  getAllUserByAdmin,
 };
 
 // USAR CLASES
