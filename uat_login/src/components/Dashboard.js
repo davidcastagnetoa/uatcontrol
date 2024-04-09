@@ -6,36 +6,8 @@ import { Label } from "./ui/label";
 import { useToast } from "./ui/use-toast";
 import { Link } from "react-router-dom";
 import { Toaster } from "./ui/toaster";
-import { UserNav } from "./UserNav.jsx";
-import {
-  // ChevronLeft,
-  // ChevronRight,
-  Copy,
-  // CreditCard,
-  // File,
-  Home,
-  LineChart,
-  MoreHorizontal,
-  // ListFilter,
-  // MoreVertical,
-  Package,
-  Package2,
-  PanelLeft,
-  Search,
-  Settings,
-  // ShoppingCart,
-  // Truck,
-  Users2,
-} from "lucide-react";
+import { Copy, MoreHorizontal } from "lucide-react";
 import { Badge } from "./ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  // BreadcrumbPage,
-  // BreadcrumbSeparator,
-} from "./ui/breadcrumb";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import {
@@ -51,10 +23,8 @@ import { Input } from "./ui/input";
 // import { Pagination, PaginationContent, PaginationItem } from "./ui/pagination";
 import { Progress } from "./ui/progress";
 // import { Separator } from "./ui/separator";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ScrollArea } from "./ui/scroll-area.jsx";
 import { useNavigate } from "react-router-dom";
@@ -71,6 +41,8 @@ import {
 
 import moment from "moment";
 import "moment/locale/es";
+import AsideBar from "./AsideBar.jsx";
+import Header from "./Header.jsx";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -240,11 +212,12 @@ function Dashboard() {
       const user_data = await getUserData(); // getAllUATs() es la función que recuperará las UATs¨
       // console.debug("Datos de usuario recuperados:", user_data);
       setUserData(user_data);
-      console.log("Datos de usuario en userData:", userData);
     } catch (error) {
       console.error("Hubo un problema al recuperar los datos del usuario:", error);
     }
   }, [getUserData]);
+
+  console.debug("Datos de usuario en userData:", userData);
 
   // Actiualiza los datos del Contexto DataContext
   useEffect(() => {
@@ -267,210 +240,13 @@ function Dashboard() {
   console.log("Privilegios de usuario: " + userStatus);
 
   return (
-    <TooltipProvider>
+    <>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         {/* BARRA LATERAL IZQUIERDA */}
-        <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-          <nav className="flex flex-col items-center gap-4 px-2 sm:py-4">
-            <Link
-              to="/dashboard"
-              className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-            >
-              <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-            </Link>
-
-            {/* Dashboard */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/dashboard"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                >
-                  <Home className="h-5 w-5" />
-                  <span className="sr-only">Dashboard</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Dashboard</TooltipContent>
-            </Tooltip>
-
-            {/* Orders */}
-            {/* <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="#"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  <span className="sr-only">Orders</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Orders</TooltipContent>
-            </Tooltip> */}
-
-            {/* UATs */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/uats"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                >
-                  <Package className="h-5 w-5" />
-                  <span className="sr-only">UATs</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">UATs</TooltipContent>
-            </Tooltip>
-
-            {/* Customers */}
-            {/* <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="#"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                >
-                  <Users2 className="h-5 w-5" />
-                  <span className="sr-only">Customers</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Customers</TooltipContent>
-            </Tooltip> */}
-
-            {/* Analytics */}
-            {/* <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="#"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                >
-                  <LineChart className="h-5 w-5" />
-                  <span className="sr-only">Analytics</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Analytics</TooltipContent>
-            </Tooltip> */}
-          </nav>
-
-          <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to="/settings"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                >
-                  <Settings className="h-5 w-5" />
-                  <span className="sr-only">Settings</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">Settings</TooltipContent>
-            </Tooltip>
-          </nav>
-        </aside>
-
-        {/* BODY */}
+        <AsideBar />
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 md:h-full lg:h-screen">
           {/* HEADER */}
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button size="icon" variant="outline" className="sm:hidden">
-                  <PanelLeft className="h-5 w-5" />
-                  <span className="sr-only">Toggle Menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="sm:max-w-xs">
-                <nav className="grid gap-6 text-lg font-medium">
-                  {/* Home Aside Link */}
-                  <Link
-                    to="/"
-                    className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
-                  >
-                    <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
-                    <span className="sr-only">Home</span>
-                  </Link>
-
-                  {/* Dashboard Aside Link */}
-                  <Link
-                    to="/dashboard"
-                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <Home className="h-5 w-5" />
-                    Dashboard
-                  </Link>
-
-                  {/* Orders Aside Link */}
-                  {/* <Link to="#" className="flex items-center gap-4 px-2.5 text-foreground">
-                    <ShoppingCart className="h-5 w-5" />
-                    Orders
-                  </Link> */}
-
-                  {/* UATs Aside Link */}
-                  <Link
-                    to="/uats"
-                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <Package className="h-5 w-5" />
-                    UATs
-                  </Link>
-
-                  {/* Profile Aside Link */}
-                  <Link
-                    to="/profile"
-                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <Users2 className="h-5 w-5" />
-                    Profile
-                  </Link>
-
-                  {/* Settings Aside Link */}
-                  <Link
-                    to="/settings"
-                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <LineChart className="h-5 w-5" />
-                    Settings
-                  </Link>
-                </nav>
-              </SheetContent>
-            </Sheet>
-
-            <Breadcrumb className="hidden md:flex">
-              {/* Listado Breadcrumb */}
-              <BreadcrumbList>
-                {/* Breadcrumb Dashboard */}
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to="/dashboard">Dashboard</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-
-                {/* <BreadcrumbSeparator /> */}
-
-                {/* Breadcrumb UATs */}
-                {/* <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to="/uats">UATs</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem> */}
-
-                {/* <BreadcrumbSeparator /> */}
-
-                {/* Hijo Breadcrumb Edit UATs*/}
-                {/* <BreadcrumbItem>
-                  <BreadcrumbPage>Edit UATs</BreadcrumbPage>
-                </BreadcrumbItem> */}
-              </BreadcrumbList>
-            </Breadcrumb>
-
-            <div className="relative ml-auto flex-1 md:grow-0">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
-              />
-            </div>
-            <UserNav />
-          </header>
+          <Header page="Dashboard" />
 
           {/* MAIN */}
           <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:grid-cols-4 xl:grid-cols-4">
@@ -1279,7 +1055,7 @@ function Dashboard() {
         </div>
       </div>
       <Toaster />
-    </TooltipProvider>
+    </>
   );
 }
 

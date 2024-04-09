@@ -15,6 +15,7 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
 
     root.classList.remove("light", "dark");
 
+    // Tema de color segun el sistema
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 
@@ -25,6 +26,8 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
     root.classList.add(theme);
   }, [theme]);
 
+  // Agregar al Local Storage para que persista la preferencia del usuario entre sesiones
+  // React hook that manages a theme for an application
   const value = {
     theme,
     setTheme: (theme) => {
