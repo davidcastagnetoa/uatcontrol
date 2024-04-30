@@ -2,9 +2,15 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import { db, searchUserByEmail, insertUser } from "../../utils/db.js";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { OAuth2Client } from "google-auth-library";
+
+//Database
+import { db, searchUserByEmail, insertUser } from "../../utils/db.js";
+
+// Servicios
+import { getUserByUsername, getUserById, checkUserExists, createUser } from "../services/userService.js";
+import { verifyPassword, generateToken, verifyToken } from "../services/authService.js";
 
 dotenv.config();
 
@@ -27,192 +33,129 @@ if (!oAuth2Client) {
   throw new Error("OAuth2Client not defined");
 }
 
-// Esta funcion recibe el usuario y contraseña del la funcion login del cliente,
-// en AuthProvider.js, y si son correctos genera y devuelve un token.
-// Si no son correctos devuelve un 401.
+/**
+ * Esta funcion de autentificacion recibe el usuario y contraseña del la funcion login del cliente
+ * en AuthProvider.js, y si son correctos genera y devuelve un token.
+ * Si no son correctos devuelve un 401.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 export const login = async (req, res) => {
-  const { username, password } = req.body; //Lo que enviamos desde el cliente
+  try {
+    const { username, password } = req.body;
 
-  // Verificar si la contraseña está presente
-  if (!password) {
-    return res.status(400).json({ message: "La contraseña es requerida" });
-  }
-  // Verificar si username está presente
-  if (!username) {
-    return res.status(400).json({ message: "El nombre de usuario es requerido" });
-  }
-
-  // Verificar el usuario en la base de datos junto con su método de autenticación local
-  db.get(
-    `SELECT users.username, users.email, users.picture, users.matricula, users.usergroup, auth_methods.auth_details
-  FROM users
-  JOIN auth_methods ON users.id = auth_methods.user_id
-  WHERE users.username = ? AND auth_methods.auth_type = 'local'`,
-    [username],
-    (err, row) => {
-      if (err) {
-        // Manejar errores de la base de datos
-        console.debug("Error al consultar la base de datos");
-        return res.status(500).json({ message: "Error al consultar la base de datos" });
-      }
-
-      if (!row) {
-        // Usuario no encontrado o no tiene autenticación local
-        console.debug("Usuario no encontrado o no tiene autenticación local");
-        return res.status(401).json({ message: "Usuario no encontrado o no tiene autenticación local" });
-      }
-
-      // `row.auth_details` contiene el hash de la contraseña
-      // Usar bcrypt para hashear y verificar las contraseñas
-      const isPasswordCorrect = bcrypt.compareSync(password, row.auth_details);
-
-      if (isPasswordCorrect) {
-        // Generar un token
-        const token = jwt.sign(
-          { username: row.username, email: row.email, picture: row.picture, matricula: row.matricula },
-          process.env.JWT_SECRET,
-          { expiresIn: "1h" }
-        );
-
-        // Enviar la respuesta
-        console.debug("\nUsername encontrado:", row.username);
-        console.debug("Email encontrado:", row.email);
-        console.debug("Imagen de perfil encontrada:", row.picture);
-        console.debug("Matricula Encontrada:", row.matricula);
-        console.debug("Roll de usuario encontrado:", row.usergroup);
-
-        res.json({
-          token,
-          userData: {
-            username: row.username,
-            email: row.email,
-            picture: row.picture,
-            matricula: row.matricula,
-          },
-        });
-      } else {
-        // Contraseña incorrecta
-        console.debug("Credenciales no validas");
-        res.status(401).json({ message: "Credenciales no válidas" });
-      }
+    if (!username || !password) {
+      return res.status(400).json({ message: "El nombre de usuario y la contraseña son requeridos" });
     }
-  );
+
+    const user = await getUserByUsername(username);
+
+    if (!user) {
+      return res.status(401).json({ message: "Usuario no encontrado o no tiene autenticación local" });
+    }
+
+    const isPasswordCorrect = await verifyPassword(password, user.auth_details);
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ message: "Credenciales no válidas" });
+    }
+
+    const payload = {
+      username: user.username,
+      email: user.email,
+      picture: user.picture,
+      matricula: user.matricula,
+    };
+
+    const token = generateToken(payload);
+    res.json({ token, userData: user });
+  } catch (error) {
+    console.debug(error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
-// Esta funcion verifica el token recibido por el cliente desde
-// AuthProvider.js en el header de la peticion,
-// y si es valido devuelve el usuario y el token.
-// Si no es valido devuelve un 401.
-export const verifyTokenController = (req, res) => {
+/**
+ * Esta funcion verifica el token recibido por el cliente desde.
+ * AuthProvider.js en el header de la peticion
+ * verifica si el token es valido y extrae de él la informacion del usuario.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
+export const verifyTokenController = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    // console.debug("Header recibido: ", authHeader);
     const token = authHeader && authHeader.split(" ")[1];
 
-    // console.debug("TOKEN recibido en verifyTokenController: ", token);
-    if (token == null) return res.sendStatus(401);
+    if (!token) {
+      return res.status(401).json({ message: "Token is missing" });
+    }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-      if (err) return res.sendStatus(403);
-      console.debug("Datos de usuario encontrados en verifyTokenController: ", user);
-      const username = user.username || user.name;
-      res.json({ valid: true, username: username, email: user.email, picture: user.picture, token: token });
-    });
-  } catch (err) {
-    console.log("Error en verifyTokenController: ", err);
-    return res.sendStatus(500);
+    const decodedUser = await verifyToken(token);
+
+    const userInfo = {
+      valid: true,
+      username: decodedUser.username || decodedUser.name,
+      email: decodedUser.email,
+      picture: decodedUser.picture,
+      token: token,
+    };
+
+    res.json(userInfo);
+  } catch (error) {
+    console.log("Error in verifyTokenController:", error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(403).json({ message: "Token verification failed" });
+    }
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Esta funcion da da alta a un usuario y registra sus datos en la base de datos
-// Si el usuario ya esta registrado devuelve un 409.
-// Si no se pudo dar alta devuelve un 500.
-// Caso contrario, registra al usuario en las tablas users y auth_methods,
-// Genera un token de authentificacion y responde con el token y los datos del usuario creado
+/**
+ * Esta funcion da da alta a un usuario y registra sus datos en la base de datos
+ * Si el usuario ya esta registrado devuelve un 409, o un 500 en caso de error,
+ * Caso contrario, registra al usuario en las tablas users y auth_methods, genera un token
+ * de authentificacion y responde con el token y los datos del usuario creado
+ * Handles the signup process for a user.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - The response object.
+ */
 export const signup = async (req, res) => {
   const { username, matricula, email, password } = req.body;
 
-  if (!username) {
-    return res.status(400).json({ message: "El nombre de usuario es requerido" });
-  }
-  if (!matricula) {
-    return res.status(400).json({ message: "La matricula es requerida" });
-  }
-  if (!email) {
-    return res.status(400).json({ message: "El email es requerido" });
-  }
-  if (!password) {
-    return res.status(400).json({ message: "La contraseña es requerida" });
+  if (!username || !matricula || !email || !password) {
+    return res.status(400).json({ message: "Todos los campos son requeridos" });
   }
 
-  // Se hashea la contraseña antes de guardarla en la DB
-  const salt = bcrypt.genSaltSync(10);
-  const passwordHash = bcrypt.hashSync(password, salt);
-
-  const userPicture = "/default_avatar_route.png"; // EN DESARROLLO, SE ENVIARAN DESDE EL CLIENTE
-  const userRoll = "usuario"; // Por defecto  todos los usuarios son default, solo los administradores pueden cambiar el roll de los usuarios
-
-  // Buscar si el usuario ya existe en la base de datos por email
-  db.get(`SELECT id FROM users WHERE email = ?`, [email], (err, row) => {
-    if (err) {
-      console.error("Error al buscar el usuario:", err.message);
-      return res.status(500).send("Error al buscar el usuario en la base de datos");
+  try {
+    const exists = await checkUserExists(email);
+    if (exists) {
+      return res.status(409).json({ message: "El email ya está registrado" });
     }
 
-    if (row) {
-      // El usuario ya existe
-      console.debug("id encontrado del usuario ya registrado: ", row);
-      return res.status(409).send("El email ya está registrado");
-    } else {
-      // El usuario no existe, proceder con la inserción
-      db.run(
-        `INSERT INTO users (username, matricula, email, picture, usergroup) VALUES (?, ?, ?, ?, ?)`,
-        [username, matricula, email, userPicture, userRoll],
-        function (err) {
-          if (err) {
-            console.error("Error al insertar el usuario:", err.message);
-            return res.status(500).send("Error al crear el usuario");
-          }
-          const userId = this.lastID;
+    const userId = await createUser(username, matricula, email, password);
+    const user = await getUserById(userId);
+    const token = generateToken(user);
 
-          db.run(
-            `INSERT INTO auth_methods (user_id, auth_type, auth_details) VALUES (?, 'local', ?)`,
-            [userId, passwordHash],
-            (err) => {
-              if (err) {
-                console.error("Error al insertar método de autenticación:", err.message);
-                return res.status(500).send("Error al establecer el método de autenticación");
-              }
-              // Responder al cliente después de la inserción exitosa
-              const token = jwt.sign(
-                { username: username, email: email, picture: userPicture, matricula: matricula },
-                process.env.JWT_SECRET,
-                { expiresIn: "1h" }
-              );
+    const payload = {
+      username: user.username,
+      email: user.email,
+      matricula: user.matricula,
+      picture: user.picture,
+    };
 
-              // Enviar la respuesta
-              console.debug("\nUsername Creado:", username);
-              console.debug("Email Creado:", email);
-              console.debug("Picture Creado:", userPicture);
-              console.debug("Matricula Creada:", matricula);
-              console.debug("Roll de Usuario Creado:", userRoll);
-
-              res.status(201).json({
-                message: "Usuario creado exitosamente",
-                token: token,
-                userData: {
-                  username: username,
-                  email: email,
-                  picture: userPicture,
-                  matricula: matricula,
-                },
-              });
-            }
-          );
-        }
-      );
-    }
-  });
+    res.status(201).json({
+      message: "Usuario creado exitosamente",
+      token: token,
+      userData: payload,
+    });
+  } catch (error) {
+    console.error("Error en el controlador signup:", error.message);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // Esta funcion verifica la identidad del usuario mediante su cuenta de Microsoft

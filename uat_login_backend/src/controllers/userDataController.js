@@ -37,16 +37,6 @@ export const saveUserUAT = async (req, res) => {
     let userId;
     if (!row) {
       throw new Error("El usuario no existe, no se puede guardar la UAT");
-
-      // // NO DISPONIBLE, Experimental, si el usuario no existe se crea uno nuevo
-      // console.debug("\nControlador saveUserUAT: Ejecutando siguiente try, insertando nuevo usuario");
-      // console.debug("El usuario no existe, insertando usuario...");
-      // const userId = await insertUser(uatUsername, userEmail, userPicture, userMatricula, userRoll);
-      // console.debug("Nuevo usuario insertado, userId:", userId);
-      // console.log("Insertando UAT...");
-      // const UATinserted = await insertUatCollection(userId, uatScript, uatLink, uatOSA, uatStatus);
-      // console.debug("UAT insertado:", UATinserted);
-      // return res.status(200).send("Enlace UAT guardado correctamente");
     } else {
       // El usuario existe, usa su id existente
       userId = row.id;

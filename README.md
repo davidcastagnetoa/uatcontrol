@@ -27,12 +27,12 @@ El proyecto se divide en dos partes principales: el cliente (frontend) y el serv
 - ### Servidor (Backend)
     El servidor, creado con Node.js, maneja la lógica de aplicación, autenticación y operaciones con los enlaces. La estructura es la siguiente:
 
-    - ****Routes**: Contiene las rutas para la gestión de usuarios, dashboard y autenticación.**
+    - ****Routes**: *Contiene las rutas para la gestión de usuarios, dashboard y autenticación. Se encargan únicamente de definir las rutas y delegar el procesamiento de las solicitudes a los controladores.*
         - ***authRoutes.js***: *Gestiona la autenticación y entrega de tokens.*
         - ***userDataRoutes.js***: *Permite operaciones relacionadas con los datos del usuario.*
         - ***dashboardRoutes.js***: *Accesible tras la autenticación, para la gestión de enlaces.*
 
-    - ****Controllers**: Contiene la lógica para cada ruta.**
+    - ****Controllers**: *Contiene la lógica para cada ruta. Manejan la lógica de negocio, como validar entradas, interactuar con modelos de datos o servicios, y devolver las respuestas adecuadas al cliente*
         - ***authController.js***: *Lógica de autenticación y entrega de tokens.*
         - ***userDataController.js***: *Gestión de datos de usuario.*
         - ***dashboardController.js***: *Operaciones del dashboard, como la gestión de enlaces.*
@@ -42,6 +42,10 @@ El proyecto se divide en dos partes principales: el cliente (frontend) y el serv
 
     - ****Utils**:**
         - ***db.js***: *Maneja todas las funciones especificas que manipulan directamente la base de datos, la base de datos usada es SQLite.*
+
+    - ****Services**: *Maneja la lógica relacionada con operaciones de base de datos, autenticación y otras operaciones complejas que deben ser manejadas en una capa de servicios separada*
+        - ***authServices.js***: *Este módulo gestiona la autenticación, incluyendo la verificación de contraseñas y la generación de tokens JWT para los usuarios, asegurando que los procesos de autenticación y autorización sean seguros y eficientes*
+        - ***userServices.js***: *Este módulo maneja todas las operaciones relacionadas con los usuarios en la base de datos, incluyendo la creación de usuarios, la verificación de la existencia de usuarios y la obtención de detalles de usuarios por su ID, facilitando la gestión y validación de datos de usuarios.*
 ## Instalación
 
 Para utilizar LinkKeeper, siga estos pasos:
