@@ -174,7 +174,7 @@ export const DataProvider = ({ children }) => {
       return userData; // Devuelve el objeto
     } catch (err) {
       // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
-      console.error("Error al obtener los datos del usuario: ", err);
+      // console.error("getUserData, Error al obtener los datos del usuario: ", err);
       throw err;
     }
   };
@@ -218,13 +218,15 @@ export const DataProvider = ({ children }) => {
       return data.userRows; // Devuelve el arreglo de UATs.
     } catch (err) {
       // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
-      console.error("Error al obtener los datos del usuario: ", err);
+      // console.error("getAllUsers, Error al obtener los datos del usuario: ", err);
       throw err;
     }
   };
 
   return (
-    <DataContext.Provider value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT, getUserData, getAllUsers }}>
+    <DataContext.Provider
+      value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT, getUserData, getAllUsers }}
+    >
       {children}
     </DataContext.Provider>
   );

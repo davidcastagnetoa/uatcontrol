@@ -18,14 +18,18 @@ if (!fs.existsSync(databasePath)) {
 }
 
 // Abrir la base de datos, lo que creará el archivo si no existe
-const db = new sqlite3.Database(databasePath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-  if (err) {
-    console.error("Error al abrir la base de datos", err.message);
-  } else {
-    console.log("Conectado a la base de datos SQLite.");
-    // Aquí podrías llamar a una función para inicializar las tablas si es necesario
+const db = new sqlite3.Database(
+  databasePath,
+  sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
+  (err) => {
+    if (err) {
+      console.error("Error al abrir la base de datos", err.message);
+    } else {
+      console.log("Conectado a la base de datos SQLite.");
+      // Aquí podrías llamar a una función para inicializar las tablas si es necesario
+    }
   }
-});
+);
 
 // Iniciar la base de datos y crear las tablas si no existen.
 const initializeDatabase = () => {
@@ -171,7 +175,9 @@ const getUserUATByParams = (userId, script, link, osa) => {
           resolve(row);
         } else {
           // Si no hay UAT que coincida con esos parámetros, devuelve null
-          console.warn("No se encontró ninguna UAT que coincida con los parámetros proporcionados.");
+          console.warn(
+            "No se encontró ninguna UAT que coincida con los parámetros proporcionados."
+          );
           resolve(null);
         }
       }

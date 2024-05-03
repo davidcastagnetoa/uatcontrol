@@ -1,8 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
+
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const oAuth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, "postmessage");
 
 /**
  * Compara una contraseña proporcionada por el
@@ -40,4 +45,32 @@ const verifyToken = (token) => {
   });
 };
 
-export { verifyPassword, generateToken, verifyToken };
+/**
+ * */
+const getGoogleUser = async (code) => {
+  try {
+    const { tokens } = await oAuth2Client.getToken(code);
+
+    let payload;
+
+    const ticket = await oAuth2Client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: CLIENT_ID,
+    });
+
+    payload = ticket.getPayload();
+    console.debug(`\nInformación del usuario de Google: ${JSON.stringify(payload)}`);
+
+    const userGoogleData = {
+      userName: payload.name,
+      userEmail: payload.email,
+      userPicture: payload.picture,
+    };
+    return userGoogleData;
+  } catch (error) {
+    console.error("Error al intercambiar el código por tokens: ", err);
+    res.status(401).send("Unauthorized");
+  }
+};
+
+export { verifyPassword, generateToken, verifyToken, getGoogleUser };

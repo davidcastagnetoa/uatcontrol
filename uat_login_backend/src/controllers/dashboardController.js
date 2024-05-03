@@ -35,10 +35,12 @@ export const getAllUsers = async (req, res) => {
 
   // Email de usuario enviado desde el cliente
   const userEmail = req.user.email;
-  console.debug("Email encontrado: ", userEmail);
+  console.debug("getAllUsers, Email encontrado: ", userEmail);
 
   try {
-    console.debug("\nControlador getAllUsers: Verificando si el usuario es administrador y obteniendo usuarios");
+    console.debug(
+      "\nControlador getAllUsers: Verificando si el usuario es administrador y obteniendo usuarios"
+    );
 
     // Intenta obtener todos los usuarios con la función que verifica si es administrador
     let userRows = await getAllUserByAdmin(userEmail);

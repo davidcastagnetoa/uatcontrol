@@ -26,7 +26,9 @@ export const saveUserUAT = async (req, res) => {
   try {
     console.debug("\nControlador saveUserUAT: Ejecutando try principal de busqueda de usuario");
     row = await searchUserByUsername(username);
-    console.log(`Se ha obtenido correctamente el ID del usuario ${username}: datos: ${JSON.stringify(row)}`);
+    console.log(
+      `Se ha obtenido correctamente el ID del usuario ${username}: datos: ${JSON.stringify(row)}`
+    );
   } catch (err) {
     console.error("Error al buscar el usuario:", err.message);
     return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
@@ -109,7 +111,7 @@ export const removeUserUAT = async (req, res) => {
 
   // Email de usuario
   const userEmail = req.user.email;
-  console.debug("Email encontrado: ", userEmail);
+  console.debug("removeUserUAT, Email encontrado: ", userEmail);
 
   let row;
 
@@ -117,7 +119,9 @@ export const removeUserUAT = async (req, res) => {
   try {
     console.debug("\nControlador removeUserUAT: Ejecutando try principal de busqueda de usuario");
     row = await searchUserByEmail(userEmail);
-    console.log(`Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`);
+    console.log(
+      `Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`
+    );
   } catch (err) {
     console.error("Error al buscar el usuario:", err.message);
     return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
@@ -156,7 +160,7 @@ export const getUserProfile = async (req, res) => {
 
   // Email de usuario
   const userEmail = req.user.email;
-  console.debug("Email encontrado: ", userEmail);
+  console.debug("getUserProfile, Email encontrado: ", userEmail);
 
   let row;
 
@@ -164,18 +168,24 @@ export const getUserProfile = async (req, res) => {
   try {
     console.debug("\nControlador getUserProfile: Ejecutando try principal de busqueda de usuario");
     row = await searchUserByEmail(userEmail);
-    console.log(`Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`);
+    console.log(
+      `Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`
+    );
   } catch (err) {
     console.error("Error al buscar el usuario:", err.message);
     return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
   }
 
   try {
-    console.debug("\nControlador getUserProfile: Ejecutando siguiente try, enviando datos de usuario");
+    console.debug(
+      "\nControlador getUserProfile: Ejecutando siguiente try, enviando datos de usuario"
+    );
 
     // Si el usuario no existe, devuelve un error
     if (!row) {
-      throw new Error("El usuario no existe, no se puede obtener los datos de un usuario inexistente");
+      throw new Error(
+        "El usuario no existe, no se puede obtener los datos de un usuario inexistente"
+      );
     }
 
     // El usuario existe, usa su id existente para encontrar la UAT
@@ -195,7 +205,7 @@ export const getUserProfile = async (req, res) => {
     // Enviamos la respuesta
     res.json(userData);
   } catch (err) {
-    console.error("Error al obtener los datos del usuario: ", err);
+    // console.error("getUserProfile, Error al obtener los datos del usuario: ", err);
     return res.status(500).send("Internal Server Error");
   }
 };

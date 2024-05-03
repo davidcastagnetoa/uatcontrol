@@ -88,16 +88,76 @@ const createUser = (username, matricula, email, password) => {
  * */
 const getUserById = (userId) => {
   return new Promise((resolve, reject) => {
-    db.get(`SELECT username, email, matricula, picture, usergroup FROM users WHERE id = ?`, [userId], (err, row) => {
+    db.get(
+      `SELECT username, email, matricula, picture, usergroup FROM users WHERE id = ?`,
+      [userId],
+      (err, row) => {
+        if (err) {
+          console.debug("Error al recuperar el usuario:", err.message);
+          const error = new Error("Error al recuperar el usuario");
+          console.error(error);
+          reject(error);
+        } else if (row) {
+          resolve(row);
+        } else {
+          reject(new Error("Usuario no encontrado después de la creación"));
+        }
+      }
+    );
+  });
+};
+
+/**
+ * Recupera los detalles completos de un usuario basado en su
+ * email de la base de datos.
+ * */
+const searchUserByEmail = (email) => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, row) => {
       if (err) {
-        reject(new Error("Error al recuperar el usuario"));
-      } else if (row) {
-        resolve(row);
+        console.debug("Error al buscar el usuario por email:", err.message);
+        const error = new Error("Error al buscar el usuario por email");
+        console.error(error);
+        reject(error);
       } else {
-        reject(new Error("Usuario no encontrado después de la creación"));
+        resolve(row);
       }
     });
   });
 };
 
-export { getUserByUsername, getUserById, checkUserExists, createUser };
+/**
+ * Inserta o actualiza un usuario en la base de datos.
+ * Si el usuario no existe, se crea. Si ya existe, se actualizan sus datos.
+ * */
+const insertOrUpdateGoogleUser = async (
+  userName,
+  userEmail,
+  userPicture,
+  userMatricula = "unregistered",
+  userRoll = "usuario"
+) => {
+  let user = await searchUserByEmail(userEmail);
+  if (!user) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO users (username, email, picture, matricula, usergroup) VALUES (?, ?, ?, ?, ?)`,
+        [userName, userEmail, userPicture, userMatricula, userRoll],
+        function (err) {
+          if (err) reject(new Error("Error al insertar el usuario"));
+          else resolve(this.lastID);
+        }
+      );
+    });
+  }
+  return user;
+};
+
+export {
+  getUserByUsername,
+  getUserById,
+  checkUserExists,
+  createUser,
+  searchUserByEmail,
+  insertOrUpdateGoogleUser,
+};

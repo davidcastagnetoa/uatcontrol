@@ -6,11 +6,24 @@ import { Client } from "@microsoft/microsoft-graph-client";
 import { OAuth2Client } from "google-auth-library";
 
 //Database
-import { db, searchUserByEmail, insertUser } from "../../utils/db.js";
+import { db, insertUser } from "../../utils/db.js";
 
 // Servicios
-import { getUserByUsername, getUserById, checkUserExists, createUser } from "../services/userService.js";
-import { verifyPassword, generateToken, verifyToken } from "../services/authService.js";
+import {
+  getUserByUsername,
+  getUserById,
+  checkUserExists,
+  createUser,
+  searchUserByEmail,
+  insertOrUpdateGoogleUser,
+} from "../services/userService.js";
+
+import {
+  verifyPassword,
+  generateToken,
+  getGoogleUser,
+  verifyToken,
+} from "../services/authService.js";
 
 dotenv.config();
 
@@ -21,11 +34,15 @@ const oAuth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, "postmessage"); 
 
 // Control de credenciales y errores para debug
 if (!CLIENT_ID) {
-  console.error("Google client ID environment variable not set. Please add GOOGLE_CLIENT_ID to .env file.");
+  console.error(
+    "Google client ID environment variable not set. Please add GOOGLE_CLIENT_ID to .env file."
+  );
   throw new Error("Google client ID environment variable not set");
 }
 if (!CLIENT_SECRET) {
-  console.error("Google Secret environment variable not set. Please add GOOGLE_CLIENT_SECRET to .env file.");
+  console.error(
+    "Google Secret environment variable not set. Please add GOOGLE_CLIENT_SECRET to .env file."
+  );
   throw new Error("Google Secret environment variable not set");
 }
 if (!oAuth2Client) {
@@ -34,25 +51,26 @@ if (!oAuth2Client) {
 }
 
 /**
- * Esta funcion de autentificacion recibe el usuario y contraseña del la funcion login del cliente
+ * Esta función de autentificación recibe el usuario y contraseña del la funcion login del cliente
  * en AuthProvider.js, y si son correctos genera y devuelve un token.
  * Si no son correctos devuelve un 401.
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @returns {void}
  */
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ message: "El nombre de usuario y la contraseña son requeridos" });
+      return res
+        .status(400)
+        .json({ message: "El nombre de usuario y la contraseña son requeridos" });
     }
 
     const user = await getUserByUsername(username);
 
     if (!user) {
-      return res.status(401).json({ message: "Usuario no encontrado o no tiene autenticación local" });
+      return res
+        .status(401)
+        .json({ message: "Usuario no encontrado o no tiene autenticación local" });
     }
 
     const isPasswordCorrect = await verifyPassword(password, user.auth_details);
@@ -77,12 +95,9 @@ export const login = async (req, res) => {
 };
 
 /**
- * Esta funcion verifica el token recibido por el cliente desde.
+ * Esta función verifica el token recibido por el cliente desde.
  * AuthProvider.js en el header de la peticion
  * verifica si el token es valido y extrae de él la informacion del usuario.
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @returns {void}
  */
 export const verifyTokenController = async (req, res) => {
   try {
@@ -114,14 +129,9 @@ export const verifyTokenController = async (req, res) => {
 };
 
 /**
- * Esta funcion da da alta a un usuario y registra sus datos en la base de datos
- * Si el usuario ya esta registrado devuelve un 409, o un 500 en caso de error,
- * Caso contrario, registra al usuario en las tablas users y auth_methods, genera un token
- * de authentificacion y responde con el token y los datos del usuario creado
- * Handles the signup process for a user.
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @returns {Object} - The response object.
+ * Esta función da da alta a un usuario y registra sus datos en la base de datos. Si el usuario
+ * ya esta registrado devuelve un 409, o un 500 en caso de error. Caso contrario, registra
+ *  al usuario en DB, genera un token y responde con el token y los datos del usuario creado
  */
 export const signup = async (req, res) => {
   const { username, matricula, email, password } = req.body;
@@ -155,6 +165,39 @@ export const signup = async (req, res) => {
   } catch (error) {
     console.error("Error en el controlador signup:", error.message);
     res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Esta función gestiona el proceso de inicio de sesión utilizando cuentas de Google.
+ * Autentica y registra o actualiza usuarios mediante Google OAuth2,
+ * devolviendo un token JWT y los datos del usuario.
+ */
+export const loginWithGoogle = async (req, res) => {
+  const { code } = req.body;
+
+  try {
+    const { userName, userEmail, userPicture } = await getGoogleUser(code);
+
+    const userData = await insertOrUpdateGoogleUser(userName, userEmail, userPicture);
+    console.debug(`\n The user data imported from DB: ${JSON.stringify(userData)}`);
+
+    const googlePayload = {
+      username: userData.username,
+      email: userData.email,
+      picture: userData.picture,
+      matricula: userData.matricula,
+      rol: userData.usergroup,
+    };
+
+    const userToken = generateToken(payload);
+    res.status(200).json({
+      userToken,
+      userInfo: googlePayload,
+    });
+  } catch (err) {
+    console.error("Error en loginWithGoogle:", err);
+    res.status(err.status || 500).send(err.message || "Internal Server Error");
   }
 };
 
@@ -233,91 +276,6 @@ export const loginWithMicrosoft = async (req, res) => {
     res.json({
       token: userToken,
       user: {
-        username: userName,
-        email: userEmail,
-        picture: userPicture,
-        matricula: userMatricula,
-        rol: userRoll,
-      },
-    });
-  } catch (err) {
-    console.error("Error al manejar la base de datos: ", err);
-    return res.status(500).send("Internal Server Error");
-  }
-};
-
-// Esta funcion verifica la identidad del usuario mediante su cuenta de Google
-// Espera recibir un codigo, que no es un token, en el body de la peticion
-// Mediante el objeto oAuth2Client se verifica la identidad del usuario y se obtiene un token
-// Despues el mismo objeto verifica el token con el metodo verifyIdToken y obtiene una carga
-// util que contiene los datos del usuario. Despues busca si el usuario ya existe en la base de datos por email
-// si el usuario no existe se inserta en la DB, en la tabla users y
-// despues en auth_methods, Si ya existe obtiene su ID en la DB y responde con un token y los datos del usuario.
-// Si la identidad es incorrecta devuevle un 401, Si no se puede guardar en la DB, devuelve un 500
-export const loginWithGoogle = async (req, res) => {
-  const { code } = req.body; // Esperamos recibir un 'code', no un 'token'
-  const { tokens } = await oAuth2Client.getToken(code);
-  // console.debug("Tokens recibidos: ", tokens);
-  let payload;
-
-  try {
-    console.debug("Controlador loginWithGoogle: Ejecutando try principal");
-    console.debug("...:: Autentificando usuario con Google ::...");
-    //Este await es importante. De lo contrario la funcion getPayload no podra ser llamada
-    const ticket = await oAuth2Client.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: CLIENT_ID,
-    });
-
-    payload = ticket.getPayload();
-    console.debug(`\nInformación del usuario en controlador de Google: ${JSON.stringify(payload)}`);
-  } catch (err) {
-    console.error("Error al intercambiar el código por tokens: ", err);
-    res.status(401).send("Unauthorized");
-  }
-
-  try {
-    console.debug("\nControlador loginWithGoogle: Ejecutando siguiente try");
-    let { name: userName, email: userEmail, picture: userPicture } = payload;
-    let userMatricula = "unregistered";
-    let userRoll = "usuario"; // Por defecto  todos los usuarios son default, solo los administradores pueden cambiar el roll de los usuarios
-
-    // Buscamos al usuario en la base de datos por email de Google
-    let row = await searchUserByEmail(userEmail);
-
-    if (!row) {
-      // Usuario de Google no existe, insertamos al nuevo usuario
-      const userId = await insertUser(userName, userEmail, userPicture, userMatricula, userRoll);
-      console.log(`Usuario nuevo insertado con ID: ${userId}`);
-    } else {
-      // Usuario de Google ya existe, actualizar variables con datos de `row`
-      console.debug("Usuario encontrado, valores de row: ", row);
-
-      userName = row?.username;
-      userMatricula = row?.matricula;
-      userEmail = row?.email;
-      userPicture = row?.picture;
-      userRoll = row?.usergroup;
-    }
-
-    // Generamos un token JWT
-    const userToken = jwt.sign(
-      {
-        username: userName,
-        email: userEmail,
-        picture: userPicture,
-        matricula: userMatricula,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
-    );
-
-    console.debug("\nToken generado:", userToken);
-    res.json({
-      userToken,
-      userInfo: {
         username: userName,
         email: userEmail,
         picture: userPicture,
