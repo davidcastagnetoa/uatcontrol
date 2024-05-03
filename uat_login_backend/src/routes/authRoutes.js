@@ -9,7 +9,7 @@ import {
 
 const router = express.Router();
 
-// Darse de alta con usuario , email, matricula y contraseña
+// Darse de alta con usuario , email, matrícula y contraseña
 router.post("/signup", signup);
 
 // Verificar identidad del usuario

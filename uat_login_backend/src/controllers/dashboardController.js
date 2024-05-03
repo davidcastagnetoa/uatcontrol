@@ -6,7 +6,7 @@ import { getUserUATsStatusCountsByEmail, getAllUserByAdmin } from "../../utils/d
 
 // Controlador para obtener las estadisticas de las UATs del usuario en la DB
 export const getUATsStatistics = async (req, res) => {
-  console.debug("Datos decodificados desde Middleware: ", req.user);
+  // console.debug("Datos decodificados desde Middleware: ", req.user);
   const userEmail = req.user.email;
 
   try {
@@ -31,16 +31,14 @@ export const getUATsStatistics = async (req, res) => {
 // Controlador para obtener todos los usuarios de la DB, solo disponible para usuarios con privilegios de administrador
 export const getAllUsers = async (req, res) => {
   // Pasa por el middleware para identificar al usuario
-  console.debug("Datos decodificados desde Middleware: ", req.user);
+  // console.debug("Datos decodificados desde Middleware: ", req.user);
 
   // Email de usuario enviado desde el cliente
   const userEmail = req.user.email;
   console.debug("getAllUsers, Email encontrado: ", userEmail);
 
   try {
-    console.debug(
-      "\nControlador getAllUsers: Verificando si el usuario es administrador y obteniendo usuarios"
-    );
+    console.debug("\nControlador getAllUsers: Verificando si el usuario es administrador y obteniendo usuarios");
 
     // Intenta obtener todos los usuarios con la función que verifica si es administrador
     let userRows = await getAllUserByAdmin(userEmail);

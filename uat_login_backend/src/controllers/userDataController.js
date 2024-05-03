@@ -26,9 +26,7 @@ export const saveUserUAT = async (req, res) => {
   try {
     console.debug("\nControlador saveUserUAT: Ejecutando try principal de busqueda de usuario");
     row = await searchUserByUsername(username);
-    console.log(
-      `Se ha obtenido correctamente el ID del usuario ${username}: datos: ${JSON.stringify(row)}`
-    );
+    console.log(`Se ha obtenido correctamente el ID del usuario ${username}: datos: ${JSON.stringify(row)}`);
   } catch (err) {
     console.error("Error al buscar el usuario:", err.message);
     return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
@@ -54,7 +52,8 @@ export const saveUserUAT = async (req, res) => {
 
 // Controlador para obtener todas las UAT de un usuario de la DB
 export const getAllUserUATs = async (req, res) => {
-  console.debug("Datos decodificados desde Middleware: ", req.user); // Pasa por el middleware para obtener los datos del usuario
+  // Pasa por el middleware para obtener los datos del usuario
+  // console.debug("Datos decodificados desde Middleware: ", req.user);
   const username = req.user.username;
   const userPicture = req.user.picture;
   const userEmail = req.user.email;
@@ -62,7 +61,7 @@ export const getAllUserUATs = async (req, res) => {
 
   //Aqui llamamos las UAT de las bases de datos del usuario para mostrarlas en la dashboard
   try {
-    console.debug("\nControlador getAllUserUATs: Ejecutando try principal");
+    console.debug("Cargando UATs");
 
     // Buscamos las UATs del usuario en la base de datos por email del usuario
     let uatRows = await getAllUserUATsByEmail(userEmail);
@@ -81,7 +80,7 @@ export const getAllUserUATs = async (req, res) => {
 
     // Verificamos si se encontraron las UATs
     if (uatRows.length > 0) {
-      console.debug(`UATs Encontradas: ${JSON.stringify(uatRows)}`);
+      console.debug(`${uatRows.length} UATs Encontradas`);
     } else {
       console.debug("UATs no encontradas");
       responseData.userUAT = []; // Si no se encontraron UATs, asignamos un arreglo vacío
@@ -100,7 +99,7 @@ export const removeUserUAT = async (req, res) => {
   console.log("..:: Eliminando UAT ::..");
   // DATOS A USAR
   // Se pasa por el middleware para identificar al usuario logado
-  console.debug("Datos decodificados desde Middleware: ", req.user);
+  // console.debug("Datos decodificados desde Middleware: ", req.user);
 
   // Parametros a tratar enviados desde el cliente
   const { uatScript, uatLink, uatOSA } = req.body; // Se usaran los 3 valores que recibimos desde el cliente
@@ -119,9 +118,7 @@ export const removeUserUAT = async (req, res) => {
   try {
     console.debug("\nControlador removeUserUAT: Ejecutando try principal de busqueda de usuario");
     row = await searchUserByEmail(userEmail);
-    console.log(
-      `Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`
-    );
+    console.log(`Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`);
   } catch (err) {
     console.error("Error al buscar el usuario:", err.message);
     return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
@@ -153,39 +150,32 @@ export const removeUserUAT = async (req, res) => {
 
 // Controlador para obtener datos de perfil del usuario
 export const getUserProfile = async (req, res) => {
-  console.log("..:: Obteniendo datos del Usuario ::..");
+  console.log("\nObteniendo datos del Usuario...");
   // DATOS A USAR
   // Pasa por el middleware para identificar al usuario
-  console.debug("Datos decodificados desde Middleware: ", req.user);
+  // console.debug("Datos decodificados desde Middleware: ", req.user);
 
   // Email de usuario
   const userEmail = req.user.email;
-  console.debug("getUserProfile, Email encontrado: ", userEmail);
 
   let row;
 
   // Primero, intenta obtener el user_id del usuario existente, mediante su email
   try {
-    console.debug("\nControlador getUserProfile: Ejecutando try principal de busqueda de usuario");
+    console.debug("Buscando email de usuario en DB");
     row = await searchUserByEmail(userEmail);
-    console.log(
-      `Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`
-    );
+    console.log(`Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`);
   } catch (err) {
     console.error("Error al buscar el usuario:", err.message);
     return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
   }
 
   try {
-    console.debug(
-      "\nControlador getUserProfile: Ejecutando siguiente try, enviando datos de usuario"
-    );
+    // console.debug("\nControlador getUserProfile: Ejecutando siguiente try, enviando datos de usuario");
 
     // Si el usuario no existe, devuelve un error
     if (!row) {
-      throw new Error(
-        "El usuario no existe, no se puede obtener los datos de un usuario inexistente"
-      );
+      throw new Error("El usuario no existe, no se puede obtener los datos de un usuario inexistente");
     }
 
     // El usuario existe, usa su id existente para encontrar la UAT
