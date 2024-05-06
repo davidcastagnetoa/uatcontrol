@@ -1,13 +1,7 @@
 import React from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Link } from "react-router-dom";
-import {
-  Home,
-  //  Package,
-  Package2,
-  Settings,
-  Users2,
-} from "lucide-react";
+import { Home, Package, Package2, Settings, Users2 } from "lucide-react";
 
 const AsideBar = () => {
   return (
@@ -36,7 +30,7 @@ const AsideBar = () => {
           </Tooltip>
 
           {/* UATs */}
-          {/* <Tooltip>
+          <Tooltip>
             <TooltipTrigger asChild>
               <Link
                 to="/uats"
@@ -47,7 +41,7 @@ const AsideBar = () => {
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">UATs</TooltipContent>
-          </Tooltip> */}
+          </Tooltip>
 
           {/* Users */}
           <Tooltip>

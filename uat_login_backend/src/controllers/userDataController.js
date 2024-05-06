@@ -1,208 +1,134 @@
-import {
-  searchUserByUsername,
-  searchUserByEmail,
-  insertUatCollection,
-  getAllUserUATsByEmail,
-  deleteUserUATById,
-} from "../../utils/db.js";
+import { searchUserByEmail } from "../services/userService.js";
+import { insertUatCollection, getAllUserUATsByEmail, deleteUserUATById } from "../services/uatService.js";
 
-// ESTE CONTROLADOR PASA POR EL MIDDLEWARE PARA VERIFICAR AL USUARIO
-// YA QUE ES UNA RUTA PROTEGIDA
-// ESTE CONTROLADOR DEVUELVE LOS DATOS DEL USUARIO
+/**
+ * ESTE CONTROLADOR PASA POR EL MIDDLEWARE PARA
+ * VERIFICAR AL USUARIO YA QUE ES UNA RUTA PROTEGIDA
+ * ESTE CONTROLADOR DEVUELVE LOS DATOS DEL USUARIO
+ */
 
-// Controlador para guardar una UAT de un usuario en la DB
-export const saveUserUAT = async (req, res) => {
-  const { uatLink, uatScript, uatOSA, uatStatus } = req.body;
-  console.debug("Datos recibidos en body:", req.body); // Se lo enviamos desde el cliente, parametros a guardar
-  console.debug("Datos recibidos del usuario:", req.user); // Pasa por el middleware para obtener los datos del usuario
-
-  // Nombre de usuario
-  const username = req.user.username;
-  console.debug("Username encontrado: ", username);
-
-  let row;
-
-  // Primero, intenta obtener el user_id del usuario existente, mediante su username
-  try {
-    console.debug("\nControlador saveUserUAT: Ejecutando try principal de busqueda de usuario");
-    row = await searchUserByUsername(username);
-    console.log(`Se ha obtenido correctamente el ID del usuario ${username}: datos: ${JSON.stringify(row)}`);
-  } catch (err) {
-    console.error("Error al buscar el usuario:", err.message);
-    return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
-  }
-
-  try {
-    console.debug("\nControlador saveUserUAT: Ejecutando siguiente try, guardado de UAT");
-    let userId;
-    if (!row) {
-      throw new Error("El usuario no existe, no se puede guardar la UAT");
-    } else {
-      // El usuario existe, usa su id existente
-      userId = row.id;
-      const UATinserted = await insertUatCollection(userId, uatScript, uatLink, uatOSA, uatStatus);
-      console.debug("UAT insertado:", UATinserted);
-      return res.status(200).send("UAT guardada correctamente");
-    }
-  } catch (err) {
-    console.error("Error al guardar la UAT:", err.message);
-    return res.status(500).send("Error al guardar la UAT");
-  }
-};
-
-// Controlador para obtener todas las UAT de un usuario de la DB
+//  * Controlador para obtener todas las UAT de un usuario de la DB.
 export const getAllUserUATs = async (req, res) => {
-  // Pasa por el middleware para obtener los datos del usuario
-  // console.debug("Datos decodificados desde Middleware: ", req.user);
-  const username = req.user.username;
-  const userPicture = req.user.picture;
-  const userEmail = req.user.email;
-  const userMatricula = req.user.matricula;
+  const { username, picture: userPicture, email: userEmail, matricula: userMatricula } = req.user;
 
-  //Aqui llamamos las UAT de las bases de datos del usuario para mostrarlas en la dashboard
   try {
-    console.debug("Cargando UATs");
-
-    // Buscamos las UATs del usuario en la base de datos por email del usuario
+    console.debug("Cargando UATs para el usuario:", userEmail);
     let uatRows = await getAllUserUATsByEmail(userEmail);
 
-    // Preparamos el objeto de respuesta con los datos del usuario
-    let responseData = {
+    let payload = {
       message: `Welcome back, ${username}`,
       userData: {
-        username: username,
+        username,
         matricula: userMatricula,
         picture: userPicture,
         email: userEmail,
       },
-      userUAT: uatRows, // Aquí insertamos el arreglo de UATs directamente
+      userUAT: uatRows.length > 0 ? uatRows : [],
     };
 
-    // Verificamos si se encontraron las UATs
-    if (uatRows.length > 0) {
-      console.debug(`${uatRows.length} UATs Encontradas`);
-    } else {
-      console.debug("UATs no encontradas");
-      responseData.userUAT = []; // Si no se encontraron UATs, asignamos un arreglo vacío
-    }
-
-    // Enviamos la respuesta
-    res.json(responseData);
+    console.debug(uatRows.length > 0 ? `${uatRows.length} UATs encontradas` : "UATs no encontradas");
+    res.json(payload);
   } catch (err) {
-    console.error("Error al obtener las UATs del usuario: ", err);
-    return res.status(500).send("Internal Server Error");
+    console.error("Error al obtener las UATs del usuario:", err);
+    res.status(500).send("Internal Server Error");
   }
 };
 
-// Controlador para eliminar una UAT del usuario en la DB
-export const removeUserUAT = async (req, res) => {
-  console.log("..:: Eliminando UAT ::..");
-  // DATOS A USAR
-  // Se pasa por el middleware para identificar al usuario logado
-  // console.debug("Datos decodificados desde Middleware: ", req.user);
+//  * Controlador para obtener datos de perfil del usuario
+export const getUserProfile = async (req, res) => {
+  console.log("\nObteniendo datos del Usuario...");
+  const userEmail = req.user.email;
 
-  // Parametros a tratar enviados desde el cliente
-  const { uatScript, uatLink, uatOSA } = req.body; // Se usaran los 3 valores que recibimos desde el cliente
+  try {
+    const userData = await searchUserByEmail(userEmail);
+    if (!userData) {
+      console.error("Usuario no encontrado para el email:", userEmail);
+      return res.status(404).send("Usuario no encontrado");
+    }
+
+    const payload = {
+      username: userData.username,
+      matricula: userData.matricula,
+      picture: userData.picture,
+      email: userData.email,
+      privilegio: userData.usergroup,
+    };
+
+    console.log("Datos de usuario cargados correctamente");
+    res.json(payload);
+  } catch (err) {
+    console.error("Error al obtener los datos del usuario:", err.message);
+    switch (err.message) {
+      case "Usuario no encontrado":
+        return res.status(404).send("Usuario no encontrado");
+      default:
+        return res.status(500).send("Internal Server Error");
+    }
+  }
+};
+
+//  * Controlador para eliminar una UAT del usuario en la DB.
+export const removeUserUAT = async (req, res) => {
+  console.log("\n..:: Eliminando UAT ::..");
+  const { uatScript, uatLink, uatOSA } = req.body;
 
   if (!uatScript || !uatLink || !uatOSA) {
     return res.status(400).send("Error, faltan datos de la UAT a borrar");
   }
 
-  // Email de usuario
   const userEmail = req.user.email;
   console.debug("removeUserUAT, Email encontrado: ", userEmail);
 
-  let row;
-
-  // Primero, intenta obtener el user_id del usuario existente, mediante su email
   try {
-    console.debug("\nControlador removeUserUAT: Ejecutando try principal de busqueda de usuario");
-    row = await searchUserByEmail(userEmail);
-    console.log(`Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`);
-  } catch (err) {
-    console.error("Error al buscar el usuario:", err.message);
-    return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
-  }
-
-  // Segundo. Se obtiene el id de la UAT que coincida con los valores link, script, osa y que este asociada a dicho usuario
-  try {
-    console.debug("\nControlador removeUserUAT: Ejecutando siguiente try, eliminando UAT");
-    let userId;
-
-    // Si el usuario no existe, devuelve un error
-    if (!row) {
-      throw new Error("El usuario no existe, no se puede eliminar una UAT de un usuario no valido");
+    const user = await searchUserByEmail(userEmail);
+    if (!user) {
+      throw new Error("Usuario no encontrado");
     }
 
-    // El usuario existe, usa su id existente para encontrar la UAT
-    userId = row.id;
+    const result = await deleteUserUATById(user.id, uatScript, uatLink, uatOSA);
 
-    // Borra la UAT asociada al usuario
-    const UATremoved = await deleteUserUATById(userId, uatScript, uatLink, uatOSA);
-    console.debug("UAT eliminada:", UATremoved);
+    if (result === 0) {
+      console.debug("No se encontró la UAT con los parámetros dados.");
+      return res.status(404).send("UAT no encontrada");
+    }
+
+    console.debug("UAT eliminada correctamente.", result);
     return res.status(200).send("UAT eliminada correctamente");
   } catch (err) {
-    // Si no se encuentra dicha UAT, se devuelve un error
     console.error("Error al eliminar la UAT:", err.message);
     return res.status(500).send("Error al eliminar la UAT");
   }
 };
 
-// Controlador para obtener datos de perfil del usuario
-export const getUserProfile = async (req, res) => {
-  console.log("\nObteniendo datos del Usuario...");
-  // DATOS A USAR
-  // Pasa por el middleware para identificar al usuario
-  // console.debug("Datos decodificados desde Middleware: ", req.user);
+//  * Controlador para guardar una UAT de un usuario en la DB.
+export const saveUserUAT = async (req, res) => {
+  const { uatLink, uatScript, uatOSA, uatStatus } = req.body;
 
-  // Email de usuario
-  const userEmail = req.user.email;
-
-  let row;
-
-  // Primero, intenta obtener el user_id del usuario existente, mediante su email
-  try {
-    console.debug("Buscando email de usuario en DB");
-    row = await searchUserByEmail(userEmail);
-    console.log(`Se ha obtenido correctamente el ID del usuario ${userEmail}: datos: ${JSON.stringify(row)}`);
-  } catch (err) {
-    console.error("Error al buscar el usuario:", err.message);
-    return res.status(500).send("Error al buscar el usuario, este usuario no esta autorizado");
-  }
+  // Nombre de usuario
+  const userEmail = req.user.email; // El email viene en el payload del token
+  console.debug("Email encontrado: ", userEmail);
 
   try {
-    // console.debug("\nControlador getUserProfile: Ejecutando siguiente try, enviando datos de usuario");
+    console.debug("Controlador saveUserUAT: Buscando usuario por email");
+    const user = await searchUserByEmail(userEmail);
 
-    // Si el usuario no existe, devuelve un error
-    if (!row) {
-      throw new Error("El usuario no existe, no se puede obtener los datos de un usuario inexistente");
+    if (!user) {
+      console.error("Usuario no encontrado");
+      return res.status(404).send("Usuario no encontrado");
     }
 
-    // El usuario existe, usa su id existente para encontrar la UAT
-    const userName = row.username;
-    const userPicture = row.picture;
-    const userMatricula = row.matricula;
-    const userRoll = row.usergroup;
-
-    let userData = {
-      username: userName,
-      matricula: userMatricula,
-      picture: userPicture,
-      email: userEmail,
-      privilegio: userRoll,
-    };
-
-    // Enviamos la respuesta
-    res.json(userData);
+    console.debug("Controlador saveUserUAT: Guardando UAT");
+    const UATinserted = await insertUatCollection(user.id, uatScript, uatLink, uatOSA, uatStatus);
+    console.debug("UAT guardada con ID:", UATinserted);
+    return res.status(200).send("UAT guardada correctamente");
   } catch (err) {
-    // console.error("getUserProfile, Error al obtener los datos del usuario: ", err);
-    return res.status(500).send("Internal Server Error");
+    console.error("Error en el controlador saveUserUAT:", err.message);
+    return res.status(500).send("Error interno del servidor");
   }
 };
 
-// EN DESARROLLO :
-
-// Controlador para actualizar datos de perfil del usuario
+//! EN DESARROLLO
+// * Controlador para actualizar datos de perfil del usuario
 export const updateUserProfile = async (req, res) => {
   // Pasa por el middleware para identificar al usuario
   console.debug("Datos decodificados desde Middleware: ", req.user);
