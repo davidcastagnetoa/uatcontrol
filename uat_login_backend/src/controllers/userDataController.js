@@ -138,4 +138,5 @@ export const updateUserProfile = async (req, res) => {
   // Encriptamos la contraseña elegida por el cliente
   // Se guarda dicha contraseña en la DB
   // Se responde con un response.ok
+  return res.status(500).send("Endpoint aun no disponible");
 };

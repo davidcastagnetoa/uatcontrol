@@ -10,7 +10,7 @@ export const DataContext = createContext();
 export const DataProvider = ({ children }) => {
   const { authState } = useContext(AuthContext);
 
-  // Guarda nueva UAT en DB y responde con un ok
+  // * Guarda nueva UAT en DB y responde con un ok
   const saveUAT = async (uatLink, uatScript, uatOSA, uatStatus) => {
     try {
       if (authState.status !== "authenticated") {
@@ -41,7 +41,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Obtiene todos los UATs de la base de datos y los devuelve en un arreglo.
+  // * Obtiene todos los UATs de la base de datos y los devuelve en un arreglo.
   const getAllUATs = async () => {
     console.log("Obteniendo todos los UATs");
     try {
@@ -76,7 +76,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Elimina una UAT de la base de datos y responde con un ok
+  // * Elimina una UAT de la base de datos y responde con un ok
   const removeUAT = async (uatScript, uatLink, uatOSA) => {
     console.log("Eliminando UAT");
 
@@ -109,7 +109,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Obtiene las estadiscticas de las UATs de la base de datos y los devuelve en un arreglo.
+  // * Obtiene las estadiscticas de las UATs de la base de datos y los devuelve en un arreglo.
   const getUATstadistics = async () => {
     console.log("Obteniendo estadisticas de las UATs");
     try {
@@ -143,7 +143,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // Obtiene los datos de perfil del usuario logado
+  // * Obtiene los datos de perfil del usuario logado
   const getUserData = async () => {
     console.log("Obteniendo datos del usuario");
 
@@ -179,8 +179,7 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // EN DESARROLLO
-  // Obtiene el listado de todos los usuarios de la DB, solo para usuarios con privilegios de administrador
+  // * Obtiene el listado de todos los usuarios de la DB, solo para usuarios con privilegios de administrador
   const getAllUsers = async () => {
     console.log("Obteniendo Listado de usuarios");
 
@@ -215,7 +214,7 @@ export const DataProvider = ({ children }) => {
       // Si la respuesta es satisfactoria, procesa y devuelve los datos.
       const data = await response.json();
       console.log("Datos de Usuario obtenidos: ", data.userRows);
-      return data.userRows; // Devuelve el arreglo de UATs.
+      return data.userRows;
     } catch (err) {
       // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
       // console.error("getAllUsers, Error al obtener los datos del usuario: ", err);
@@ -223,9 +222,56 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  // ! EN DESARROLLO
+  // * Actualiza los datos del usuario logado
+  const upgradeUserData = async (username, email, matricula, rol) => {
+    console.log("Actualizando datos del usuario");
+
+    if (authState.status !== "authenticated") {
+      throw new Error("Usuario no autenticado");
+    }
+    console.log("upgradeUserData - Datos del usuario: ", username, email, matricula, rol);
+
+    // if (rol === "administrador") {
+    //   throw new Error("No puedes actualizar los datos de un administrador");
+    // }
+
+    try {
+      const response = await fetch("http://localhost:8080/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`,
+        },
+        body: JSON.stringify({ username, matricula, email, rol }),
+      });
+
+      console.warn("Respuesta del servidor los datos del usuario: ", response);
+
+      if (!response.ok) {
+        // Maneja la respuesta no satisfactoria según el código de estado HTTP
+        const errorBody = await response.text();
+
+        // Específicamente para un código 403
+        if (response.status === 403) {
+          console.error("Acceso denegado. No tienes privilegios de administrador.");
+          throw new Error("Acceso denegado. No tienes privilegios de administrador.");
+        }
+
+        // Para otros códigos de error
+        throw new Error(`Error al obtener los datos: ${errorBody}`);
+      }
+      const data = await response.json();
+      console.log("Datos de Usuario actualizados: ", data.userRows);
+      return data.userRows;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return (
     <DataContext.Provider
-      value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT, getUserData, getAllUsers }}
+      value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT, getUserData, getAllUsers, upgradeUserData }}
     >
       {children}
     </DataContext.Provider>
