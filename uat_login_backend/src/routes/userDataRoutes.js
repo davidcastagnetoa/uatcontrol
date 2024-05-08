@@ -5,6 +5,7 @@ import {
   removeUserUAT,
   getUserProfile,
   updateUserProfile,
+  proxyUAT,
 } from "../controllers/userDataController.js";
 import { verifyUserToken } from "../middleware/authMiddleware.js";
 
@@ -22,8 +23,15 @@ router.delete("/delete_uat_data", verifyUserToken, removeUserUAT);
 // * Ruta para obtener datos de perfil del usuario
 router.get("/profile", verifyUserToken, getUserProfile);
 
+// * Ruta para obtener la url de la UAT y redirigir al cliente sin mostrar la url (*)
 //! EN DESARROLLO
+router.get("/proxy", verifyUserToken, proxyUAT);
+
 // * Ruta para actualizar datos de perfil del usuario
+//! EN DESARROLLO
 router.put("/profile", verifyUserToken, updateUserProfile);
 
 export default router;
+
+// (*) <!-- HTML en tu aplicación cliente -->
+// <iframe src="/api/proxy" width="100%" height="600px"></iframe>

@@ -1,5 +1,10 @@
 import { searchUserByEmail } from "../services/userService.js";
-import { insertUatCollection, getAllUserUATsByEmail, deleteUserUATById } from "../services/uatService.js";
+import {
+  insertUatCollection,
+  getAllUserUATsByEmail,
+  deleteUserUATById,
+  getUATUrlById,
+} from "../services/uatService.js";
 
 /**
  * ESTE CONTROLADOR PASA POR EL MIDDLEWARE PARA
@@ -64,6 +69,25 @@ export const getUserProfile = async (req, res) => {
       default:
         return res.status(500).send("Internal Server Error");
     }
+  }
+};
+
+//  * Controlador para obtener la url de la UAT y redirigir al cliente a esta URL
+// ! EN DESARROLLO
+export const proxyUAT = async (req, res) => {
+  const { uatId } = req.query; // ! el ID de UAT se pasa como un parámetro de consulta desde el cliente
+  const { id: userId } = req.user;
+
+  try {
+    const uatUrl = await getUATUrlById(userId, uatId);
+    if (!uatUrl) {
+      return res.status(404).send("UAT not found");
+    }
+    // Redireccionar al cliente a la URL obtenida
+    res.redirect(uatUrl);
+  } catch (err) {
+    console.error("Error al redireccionar a la UAT:", err);
+    res.status(500).send("Internal Server Error");
   }
 };
 

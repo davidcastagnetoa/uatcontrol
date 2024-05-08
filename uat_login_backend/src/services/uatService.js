@@ -55,6 +55,22 @@ const getAllUserUATsByEmail = (email) => {
   });
 };
 
+// * Recupera específicamente la URL de una UAT que se necesita para el proxy
+const getUATUrlById = (userId, uatId) => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT url FROM uat_collection WHERE user_id = ? AND id = ?`, [userId, uatId], (err, row) => {
+      if (err) {
+        console.error("Error al obtener la URL de UAT:", err.message);
+        reject(err);
+      } else if (row) {
+        resolve(row.url);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+};
+
 //  * Extraer una UAT del usuario usando su userId
 const getUserUATByParams = (userId, script, link, osa) => {
   return new Promise((resolve, reject) => {
@@ -156,8 +172,8 @@ const getAllUserByAdmin = async (email) => {
   return getAllUsers();
 };
 
-// ! EN DESARROLLO
 //  * Actualiza en la Base de Datos una UAT segun el usuario al que pertenece , su script, link y osa
+// ! EN DESARROLLO
 const updateUatCollection = (userId, uatId, updates) => {
   // Implementar lógica para actualizar una UAT específica
   return new Promise((res, rej) => {
@@ -190,6 +206,7 @@ export {
   deleteUserUATById,
   getAllUserByAdmin,
   getAllUserUATsByEmail,
+  getUATUrlById,
   getUserUATByParams,
   getUserUATsStatusCountsByEmail,
   insertUatCollection,
