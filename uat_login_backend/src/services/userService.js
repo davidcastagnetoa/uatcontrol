@@ -2,8 +2,8 @@ import { db } from "../../utils/db.js";
 import bcrypt from "bcrypt";
 
 /**
- * Recupera los detalles completos de un usuario desde la base de datos utilizando
- * su nombre de usuario, incluyendo la autenticación y otros datos personales
+// * Recupera los detalles completos de un usuario desde la base de datos utilizando
+// * su nombre de usuario, incluyendo la autenticación y otros datos personales
  * */
 const getUserByUsername = (username) => {
   return new Promise((resolve, reject) => {
@@ -29,8 +29,8 @@ const getUserByUsername = (username) => {
 };
 
 /**
- * Verifica si ya existe un usuario con el correo
- * electrónico proporcionado en la base de datos
+// * Verifica si ya existe un usuario con el correo
+// * electrónico proporcionado en la base de datos
  * */
 const checkUserExists = (email) => {
   return new Promise((resolve, reject) => {
@@ -47,8 +47,8 @@ const checkUserExists = (email) => {
 };
 
 /**
- * Inserta un nuevo usuario en la base de datos,
- * almacenando información esencial junto con una contraseña hasheada
+// * Inserta un nuevo usuario en la base de datos, almacenando
+// * información esencial junto con una contraseña hasheada
  * */
 const createUser = (username, matricula, email, password) => {
   const salt = bcrypt.genSaltSync(10);
@@ -83,8 +83,8 @@ const createUser = (username, matricula, email, password) => {
 };
 
 /**
- * Recupera los detalles completos de un usuario basado en su
- * ID de la base de datos, asegurando que los datos recién creados sean correctos y actuales
+// * Recupera los detalles completos de un usuario basado en su ID de la base 
+// * de datos, asegurando que los datos recién creados sean correctos y actuales
  * */
 const getUserById = (userId) => {
   return new Promise((resolve, reject) => {
@@ -104,8 +104,8 @@ const getUserById = (userId) => {
 };
 
 /**
- * Recupera los detalles completos de un usuario basado en su
- * email de la base de datos.
+// * Recupera los detalles completos de un usuario 
+// * basado en su email de la base de datos.
  * */
 const searchUserByEmail = (email) => {
   return new Promise((resolve, reject) => {
@@ -123,8 +123,8 @@ const searchUserByEmail = (email) => {
 };
 
 /**
- * Inserta o actualiza un usuario en la base de datos. Si el usuario no existe, se crea.
- * Si ya existe, se actualizan sus datos. Actualmente en uso para los usuarios de Google
+// * Inserta o actualiza un usuario en la base de datos. Si el usuario no existe, se crea.
+// * Si ya existe, se actualizan sus datos. Actualmente en uso para los usuarios de Google
  * */
 const insertOrUpdateGoogleUser = async (
   userName,
@@ -150,8 +150,8 @@ const insertOrUpdateGoogleUser = async (
 };
 
 /**
- * Inserta o actualiza un usuario en la base de datos. Si el usuario no existe, se crea.
- * Si ya existe, se actualizan sus datos. Actualmente en uso para los usuarios de Microsoft
+// * Inserta o actualiza un usuario en la base de datos. Si el usuario no existe, se crea.
+// * Si ya existe, se actualizan sus datos. Actualmente en uso para los usuarios de Microsoft
  * */
 const insertOrUpdateMicrosoftUser = async (
   userName,
@@ -188,6 +188,60 @@ const insertOrUpdateMicrosoftUser = async (
   }
 };
 
+/**
+// * Verifica si el username ya existe en la base de datos, esta función se usa para actualizar
+// * el username del usuario, para evitar que el usuario pueda cambiar su username a uno ya existente
+ * */
+const isUsernameUnique = (username, userId) => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT id FROM users WHERE username = ? AND id != ?`, [username, userId], (err, row) => {
+      if (err) {
+        console.error("Error al verificar el username:", err.message);
+        reject(err);
+      } else {
+        resolve(!row); // - Devuelve true si no hay conflicto, es decir, el username es único
+      }
+    });
+  });
+};
+
+/**
+// * Actualiza los datos del perfil del usuario, solamente username, matrícula y rol de
+// * usuario, usando el email como parametro de búsqueda
+*/
+const updateUserProfile = async (email, { username, matricula, privilegio }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const user = await searchUserByEmail(email);
+      if (!user) {
+        return reject(new Error("Usuario no encontrado"));
+      }
+
+      const isUnique = await isUsernameUnique(username, user.id);
+      if (!isUnique) {
+        return reject(new Error("El nombre de usuario ya está en uso"));
+      }
+
+      db.run(
+        `UPDATE users SET username = ?, matricula = ?, usergroup = ? WHERE email = ?`,
+        [username, matricula, privilegio, email],
+        function (err) {
+          if (err) {
+            console.error("Error al actualizar el perfil del usuario:", err.message);
+            reject(err);
+          } else if (this.changes === 0) {
+            resolve(null);
+          } else {
+            resolve(true);
+          }
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 export {
   getUserByUsername,
   getUserById,
@@ -196,4 +250,5 @@ export {
   searchUserByEmail,
   insertOrUpdateGoogleUser,
   insertOrUpdateMicrosoftUser,
+  updateUserProfile,
 };

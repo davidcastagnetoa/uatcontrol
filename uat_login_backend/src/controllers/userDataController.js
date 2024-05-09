@@ -1,4 +1,4 @@
-import { searchUserByEmail } from "../services/userService.js";
+import { searchUserByEmail, updateUserProfile } from "../services/userService.js";
 import {
   insertUatCollection,
   getAllUserUATsByEmail,
@@ -7,9 +7,9 @@ import {
 } from "../services/uatService.js";
 
 /**
- * ESTE CONTROLADOR PASA POR EL MIDDLEWARE PARA
- * VERIFICAR AL USUARIO YA QUE ES UNA RUTA PROTEGIDA
- * ESTE CONTROLADOR DEVUELVE LOS DATOS DEL USUARIO
+// - ESTE CONTROLADOR PASA POR EL MIDDLEWARE PARA
+// - VERIFICAR AL USUARIO YA QUE ES UNA RUTA PROTEGIDA
+// - ESTE CONTROLADOR DEVUELVE LOS DATOS DEL USUARIO
  */
 
 //  * Controlador para obtener todas las UAT de un usuario de la DB.
@@ -151,16 +151,43 @@ export const saveUserUAT = async (req, res) => {
   }
 };
 
-//! EN DESARROLLO
 // * Controlador para actualizar datos de perfil del usuario
-export const updateUserProfile = async (req, res) => {
-  // Pasa por el middleware para identificar al usuario
-  console.debug("Datos decodificados desde Middleware: ", req.user);
-  // Se lo enviamos desde el cliente, parametros a obtener
-  const { username, matricula, email, password } = req.body; // password esta en auth_methods, auth_details
-  // Obtenemos contraseña del cliente
-  // Encriptamos la contraseña elegida por el cliente
-  // Se guarda dicha contraseña en la DB
-  // Se responde con un response.ok
-  return res.status(500).send("Endpoint aun no disponible");
+export const updateUserProfileController = async (req, res) => {
+  const { username, matricula, privilegio } = req.body;
+  const { email } = req.user; // El email se obtiene del token decodificado por el middleware
+
+  try {
+    // Verifica si el usuario existe
+    const user = await searchUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    // Actualiza el perfil del usuario
+    const updated = await updateUserProfile(email, { username, matricula, privilegio });
+    if (!updated) {
+      return res.status(400).json({ message: "No se pudo actualizar el perfil del usuario" });
+    }
+
+    // Obtén los datos actualizados del usuario
+    const updatedUser = await searchUserByEmail(email);
+
+    res.json({
+      message: "Perfil del usuario actualizado correctamente",
+      userData: {
+        username: updatedUser.username,
+        email: updatedUser.email,
+        matricula: updatedUser.matricula,
+        picture: updatedUser.picture,
+        privilegio: updatedUser.usergroup,
+      },
+    });
+  } catch (error) {
+    if (error.message.includes("El nombre de usuario ya está en uso")) {
+      return res.status(409).json({ message: error.message });
+    }
+
+    console.error("Error al actualizar el perfil del usuario:", error.message);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
 };

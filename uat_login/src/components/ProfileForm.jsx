@@ -5,6 +5,7 @@ import { Input } from "./ui/input.jsx";
 import { Label } from "./ui/label.jsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select.jsx";
 import { Button } from "./ui/button.jsx";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "./ui/form.jsx";
 
 const ProfileForm = () => {
   const [openToaster, setOpenToaster] = useState(false);
@@ -21,7 +22,7 @@ const ProfileForm = () => {
 
   const [userStatus, setUserStatus] = useState(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
 
-  // Importa las UATs del servidor
+  // * Importa los datos del usuario desde el servidor
   const handleGetUserData = useCallback(async () => {
     try {
       const user_data = await getUserData(); // getAllUATs() es la función que recuperará las UATs¨
@@ -33,43 +34,38 @@ const ProfileForm = () => {
     }
   }, [getUserData]);
 
-  // Actiualiza los datos del Contexto DataContext
+  // * Actualiza los datos del Contexto DataContext
   useEffect(() => {
     handleGetUserData(); // Actualiza los datos del usuario disponibles
   }, [handleGetUserData]);
 
-  // useEffect se ejecutará después de cada renderizado cuando uatData cambie. Se usa en los Select
+  // * useEffect se ejecutará después de cada renderizado cuando userData cambie. Se usa para los form
   useEffect(() => {
     console.warn("userData: " + JSON.stringify(userData));
     setUserStatus(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
   }, [userData]); // Dependencias: Este efecto depende de uatData.
 
+  // * Actualiza los datos del usuario en la DB
   const handleUpgradeUser = async (e) => {
     e.preventDefault();
     console.log("Upgrade user");
     setIsLoading(true);
 
     try {
-      if (!userData.username || !userData.email || !userData.matricula || !userData.privilegio) {
+      if (!userData.username || !userData.matricula || !userData.privilegio) {
         console.warn("Rellene todos los campos. Username: ", userData.uat_link);
-        console.warn("Rellene todos los campos. Email: ", userData.uat_script);
         console.warn("Rellene todos los campos. Matricula: ", userData.uat_osa);
         console.warn("Rellene todos los campos. Privilegio: ", userData.uat_status);
         setIsLoading(false);
         throw new Error("Rellene todos los campos.");
       }
-      const upgradeUser = await upgradeUserData(
-        userData.username,
-        userData.email,
-        userData.matricula,
-        userData.privilegio
-      );
+      const upgradeUser = await upgradeUserData(userData.username, userData.matricula, userData.privilegio);
 
       if (upgradeUser) {
-        console.log("Usuario actualizdo correctamente: ", upgradeUser);
+        console.log("Usuario actualizado correctamente: ", upgradeUser);
         toast({
           variant: "default", //outline
-          title: "Usuario actualizdo correctamente",
+          title: "Usuario actualizado correctamente",
           // description: "",
           open: { openToaster },
         });
@@ -108,6 +104,7 @@ const ProfileForm = () => {
   return (
     <div className="flex-1 lg:max-w-2xl">
       <div className="space-y-6">
+        {userData.picture && <img src={userData.picture} alt="avatar" className="rounded-full" />}
         <form onSubmit={handleUpgradeUser} className="space-y-8">
           <div className="space-y-2">
             <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -130,6 +127,7 @@ const ProfileForm = () => {
               Email
             </Label>
             <Input
+              disabled
               id="email"
               name="email"
               value={userData.email}
@@ -176,9 +174,8 @@ const ProfileForm = () => {
               </Select>
             </div>
           )}
-          <Button type="submit">Update profile</Button>
+          <Button type="submit">Actualizar Perfil</Button>
         </form>
-        {/* <p>Ruta de imagen: {userData.picture}</p> */}
       </div>
     </div>
   );

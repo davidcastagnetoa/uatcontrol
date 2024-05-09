@@ -38,7 +38,8 @@ const UatsList = () => {
   const [uats, setUats] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userData, setUserData] = useState({});
-  const [openDialogId, setOpenDialogId] = useState(null); // Abre cuado de dialogo
+  const [openDialogId, setOpenDialogId] = useState(null); // Abre cuado de dialogo al borrar UAT
+  const [openDialogToEditId, setOpenDialogToEditId] = useState(null);
   const [userStatus, setUserStatus] = useState(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
 
   // * Función para abrir el AlertDialog
@@ -105,6 +106,12 @@ const UatsList = () => {
       setIsLoading(false); // Termina el indicador de carga
       setOpenDialogId(null); //Cierra el AlertDialog
     }
+  };
+
+  // * Editar una UAT en el servidor
+  // ! EN DESARROLLO
+  const handleEditUAT = (id) => {
+    console.warn("El id de la UAT seleccionada es :", id);
   };
 
   // * Actiualiza los datos del Contexto DataContext
@@ -201,7 +208,7 @@ const UatsList = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>Edit</DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -224,6 +231,29 @@ const UatsList = () => {
                                     onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                   >
                                     Delete
+                                  </Button>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                          {openDialogToEditId === uat.id && (
+                            <AlertDialog
+                              open={openDialogToEditId === uat.id}
+                              onOpenChange={() => setOpenDialogToEditId(null)}
+                            >
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This preset will no longer be accessible by you or
+                                    others you&apos;ve shared it with.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                    Edit
                                   </Button>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -312,7 +342,7 @@ const UatsList = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>Edit</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -335,6 +365,30 @@ const UatsList = () => {
                                       onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                     >
                                       Delete
+                                    </Button>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+
+                            {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                            {openDialogToEditId === uat.id && (
+                              <AlertDialog
+                                open={openDialogToEditId === uat.id}
+                                onOpenChange={() => setOpenDialogToEditId(null)}
+                              >
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This preset will no longer be accessible by you or
+                                      others you&apos;ve shared it with.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                      Edit
                                     </Button>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -423,7 +477,7 @@ const UatsList = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>Edit</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -446,6 +500,30 @@ const UatsList = () => {
                                       onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                     >
                                       Delete
+                                    </Button>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+
+                            {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                            {openDialogToEditId === uat.id && (
+                              <AlertDialog
+                                open={openDialogToEditId === uat.id}
+                                onOpenChange={() => setOpenDialogToEditId(null)}
+                              >
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This preset will no longer be accessible by you or
+                                      others you&apos;ve shared it with.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                      Edit
                                     </Button>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -534,7 +612,7 @@ const UatsList = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>Edit</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -557,6 +635,30 @@ const UatsList = () => {
                                       onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                     >
                                       Delete
+                                    </Button>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+
+                            {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                            {openDialogToEditId === uat.id && (
+                              <AlertDialog
+                                open={openDialogToEditId === uat.id}
+                                onOpenChange={() => setOpenDialogToEditId(null)}
+                              >
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This preset will no longer be accessible by you or
+                                      others you&apos;ve shared it with.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                      Edit
                                     </Button>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>

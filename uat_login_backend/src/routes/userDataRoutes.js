@@ -4,7 +4,7 @@ import {
   getAllUserUATs,
   removeUserUAT,
   getUserProfile,
-  updateUserProfile,
+  updateUserProfileController,
   proxyUAT,
 } from "../controllers/userDataController.js";
 import { verifyUserToken } from "../middleware/authMiddleware.js";
@@ -28,8 +28,7 @@ router.get("/profile", verifyUserToken, getUserProfile);
 router.get("/proxy", verifyUserToken, proxyUAT);
 
 // * Ruta para actualizar datos de perfil del usuario
-//! EN DESARROLLO
-router.put("/profile", verifyUserToken, updateUserProfile);
+router.put("/profile", verifyUserToken, updateUserProfileController);
 
 export default router;
 

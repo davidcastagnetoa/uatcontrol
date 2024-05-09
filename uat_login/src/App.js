@@ -5,7 +5,7 @@ import SignUp from "./components/SignUp";
 import Dashboard from "./components/Dashboard";
 import Profile from "./components/Profile";
 import UserList from "./components/UserList";
-import Layout from "./components/Layout"
+import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 // Context
 import AuthProvider from "./components/AuthProvider";
@@ -19,12 +19,14 @@ import UatsList from "./components/UatsList";
 import SettingsLayout from "./components/settings/SettingsLayout";
 import Appearance from "./components/settings/Appearance";
 import UatSettings from "./components/settings/UatSettings";
+import UATProxy from "./components/UATProxy";
 
 // Google Provider Data
 const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 // console.debug("clientID for GoogleOAuthProvider is: " + clientId);
 
 // Componente principal
+// prettier-ignore
 function App() {
   return (
     <GoogleOAuthProvider clientId={clientId}>
@@ -37,21 +39,30 @@ function App() {
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/redirect/microsoft" element={<MicrosoftAuthRedirect />} />
 
-                {/* Nested routes for settings within Layout */}
+                {/* Nested routes for dashboard within Layout */}
                 <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Dashboard" isDashboard={true} /></ProtectedRoute>}>
                   <Route path="dashboard" element={<Dashboard />} />
                 </Route>
+                {/* Nested routes for profile within Layout */}
                 <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Profile" /></ProtectedRoute>}>
                   <Route path="profile" element={<Profile />} />
                 </Route>
+                {/* Nested routes for users within Layout */}
                 <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="User List" /></ProtectedRoute>}>
                   <Route path="users" element={<UserList />} />
                 </Route>
+                {/* Nested routes for uats within Layout */}
                 <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="UAT List" /></ProtectedRoute>}>
                   <Route path="uats" element={<UatsList />} />
                 </Route>
+                {/* Nested routes for proxy within Layout */}
+                <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Uat Page" /></ProtectedRoute>}>
+                  <Route path="proxy" element={<UATProxy />} />
+                </Route>
+                {/* Nested routes for settings within Layout */}
                 <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Settings" /></ProtectedRoute>}>
                   <Route path="settings" element={<SettingsLayout />}>
+
                   {/* Nested routes for settings within SettingsLayout */}
                     <Route index element={<Profile />} />
                     <Route path="profile" element={<Profile />} />

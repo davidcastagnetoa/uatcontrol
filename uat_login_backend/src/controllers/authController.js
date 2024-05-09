@@ -19,8 +19,8 @@ import {
 } from "../services/authService.js";
 
 /**
- * Esta función de autentificación recibe el usuario y contraseña del la funcion login del cliente
- * en AuthProvider.js, y si son correctos genera y devuelve un token. Si no son correctos devuelve un 401.
+// * Esta función de autentificación recibe el usuario y contraseña del la funcion login del cliente
+// * en AuthProvider.js, y si son correctos genera y devuelve un token. Si no son correctos devuelve un 401.
  */
 export const login = async (req, res) => {
   try {
@@ -58,8 +58,8 @@ export const login = async (req, res) => {
 };
 
 /**
- * Esta función verifica el token recibido por el cliente desde. AuthProvider.js en el header de la peticion
- * verifica si el token es valido y extrae de él la informacion del usuario.
+//  * Esta función verifica el token recibido por el cliente desde. AuthProvider.js en el header de la peticion
+//  * verifica si el token es valido y extrae de él la informacion del usuario.
  */
 export const verifyTokenController = async (req, res) => {
   try {
@@ -91,8 +91,8 @@ export const verifyTokenController = async (req, res) => {
 };
 
 /**
- * Esta función da da alta a un usuario y registra sus datos en la DB. Si ya esta registrado devuelve un 409, o un 500
- * en caso de error. Caso contrario, registra al usuario en DB, genera y devuelve un token con los datos del usuario creado
+//  * Esta función da da alta a un usuario y registra sus datos en la DB. Si ya esta registrado devuelve un 409, o un 500
+//  * en caso de error. Caso contrario, registra al usuario en DB, genera y devuelve un token con los datos del usuario creado
  */
 export const signup = async (req, res) => {
   const { username, matricula, email, password } = req.body;
@@ -130,8 +130,8 @@ export const signup = async (req, res) => {
 };
 
 /**
- * Esta función gestiona el proceso de inicio de sesión utilizando cuentas de Google. Autentica y registra o
- * actualiza usuarios mediante Google OAuth2, devolviendo un token JWT y los datos del usuario.
+//  * Esta función gestiona el proceso de inicio de sesión utilizando cuentas de Google. Autentica y registra o
+//  * actualiza usuarios mediante Google OAuth2, devolviendo un token JWT y los datos del usuario.
  */
 export const loginWithGoogle = async (req, res) => {
   const { code } = req.body;
@@ -161,8 +161,8 @@ export const loginWithGoogle = async (req, res) => {
 };
 
 /**
- * Esta función autentica a los usuarios mediante Microsoft OAuth, recuperando y gestionando sus datos
- * desde la DB para luego generar un token JWT. Devuelve el token y los datos del usuario.
+//  * Esta función autentica a los usuarios mediante Microsoft OAuth, recuperando y gestionando sus datos
+//  * desde la DB para luego generar un token JWT. Devuelve el token y los datos del usuario.
  */
 export const loginWithMicrosoft = async (req, res) => {
   const { authCode } = req.body;

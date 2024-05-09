@@ -1,14 +1,15 @@
 // DataContext.js
-import React, { createContext, useContext } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AuthContext from "./AuthContext";
 
-// ESTE CONTEXTO SE ENCARGA DE GUARDAR Y OBTENER DATOS DE UATS EN LA BASE DE DATOS
-// Crear el contexto DataContext y exportarlo para que pueda ser utilizado en cualquier componente
+// - ESTE CONTEXTO SE ENCARGA DE GUARDAR Y OBTENER DATOS DE UATS EN LA BASE DE DATOS
+// - Crear el contexto DataContext y exportarlo para que pueda ser utilizado en cualquier componente
 
 export const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
   const { authState } = useContext(AuthContext);
+  const [userData, setUserData] = useState(null);
 
   // * Guarda nueva UAT en DB y responde con un ok
   const saveUAT = async (uatLink, uatScript, uatOSA, uatStatus) => {
@@ -222,19 +223,47 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  // ! EN DESARROLLO
+  // * Función para actualizar el estado de usuario
+  const updateUserData = useCallback(async () => {
+    if (authState.status !== "authenticated") {
+      throw new Error("Usuario no autenticado");
+    }
+    try {
+      const response = await fetch("http://localhost:8080/api/profile", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Error al obtener los datos: ${errorBody}`);
+      }
+
+      const data = await response.json();
+      setUserData(data); // Actualiza el estado global del usuario
+      console.log("Datos de Usuario obtenidos y actualizados: ", data);
+    } catch (error) {
+      console.error("Error al obtener los datos del usuario:", error);
+    }
+  }, [authState]);
+
+  useEffect(() => {
+    if (authState.status === "authenticated") {
+      updateUserData();
+    }
+  }, [authState.status, updateUserData]);
+
   // * Actualiza los datos del usuario logado
-  const upgradeUserData = async (username, email, matricula, rol) => {
+  const upgradeUserData = async (username, matricula, privilegio) => {
     console.log("Actualizando datos del usuario");
 
     if (authState.status !== "authenticated") {
       throw new Error("Usuario no autenticado");
     }
-    console.log("upgradeUserData - Datos del usuario: ", username, email, matricula, rol);
-
-    // if (rol === "administrador") {
-    //   throw new Error("No puedes actualizar los datos de un administrador");
-    // }
+    console.log("upgradeUserData - Datos del usuario: ", username, matricula, privilegio);
 
     try {
       const response = await fetch("http://localhost:8080/api/profile", {
@@ -243,35 +272,43 @@ export const DataProvider = ({ children }) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authState.token}`,
         },
-        body: JSON.stringify({ username, matricula, email, rol }),
+        body: JSON.stringify({ username, matricula, privilegio }),
       });
 
       console.warn("Respuesta del servidor los datos del usuario: ", response);
 
       if (!response.ok) {
-        // Maneja la respuesta no satisfactoria según el código de estado HTTP
         const errorBody = await response.text();
 
-        // Específicamente para un código 403
         if (response.status === 403) {
           console.error("Acceso denegado. No tienes privilegios de administrador.");
           throw new Error("Acceso denegado. No tienes privilegios de administrador.");
         }
 
-        // Para otros códigos de error
         throw new Error(`Error al obtener los datos: ${errorBody}`);
       }
       const data = await response.json();
-      console.log("Datos de Usuario actualizados: ", data.userRows);
-      return data.userRows;
+      setUserData(data.userData); // Actualiza el estado con los datos recibidos
+      console.log("Datos de Usuario actualizados: ", data.userData);
+      return data.userData; // Actualiza el estado del cliente con los datos recibidos
     } catch (error) {
+      console.error("Error al Actualizar el usuario", error.message);
       throw error;
     }
   };
 
   return (
     <DataContext.Provider
-      value={{ saveUAT, getAllUATs, getUATstadistics, removeUAT, getUserData, getAllUsers, upgradeUserData }}
+      value={{
+        saveUAT,
+        getAllUATs,
+        getUATstadistics,
+        removeUAT,
+        getUserData,
+        getAllUsers,
+        upgradeUserData,
+        userData,
+      }}
     >
       {children}
     </DataContext.Provider>

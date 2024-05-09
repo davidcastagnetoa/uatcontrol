@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useContext } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import AuthContext from "../context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
@@ -13,16 +13,36 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { DataContext } from "../context/DataContext";
 
 export function UserNav() {
   const navigate = useNavigate();
   const { authState, logout } = useContext(AuthContext);
+  const { getUserData, userData } = useContext(DataContext);
+
+  // * Importa los datos del usuario desde el servidor
+  const handleGetUserData = useCallback(async () => {
+    try {
+      await getUserData();
+      console.log("Datos de usuario actualizados en el contexto:", userData);
+    } catch (error) {
+      console.error("Hubo un problema al recuperar los datos del usuario:", error);
+    }
+  }, [getUserData, userData]);
+
+  // * Actualiza los datos del Contexto DataContext
+  useEffect(() => {
+    handleGetUserData();
+  }, [handleGetUserData]);
 
   console.log("Valor de authState: " + JSON.stringify(authState));
   console.log("authState.user: ", authState.user);
-  const username = authState.user ? authState.user.username : "Invitado";
-  const email = authState.user ? authState.user.email : "Invitado@invitado.com";
-  const picture = authState.user ? authState.user.picture : "./ruta_invitado_avatar";
+  console.warn("userData from DataContext: ", userData);
+
+  const username = userData?.username ? userData.username : "Invitado";
+  const email = userData?.email ? userData.email : "Invitado@invitado.com";
+  const picture = userData?.picture ? userData.picture : "./ruta_invitado_avatar";
+
   console.log("Valor de username: " + username);
   console.log("Valor de email: " + email);
   console.log("Ruta de picture: " + picture);

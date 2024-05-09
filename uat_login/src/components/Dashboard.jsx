@@ -47,6 +47,7 @@ function Dashboard() {
   const { saveUAT, getAllUATs, getUATstadistics, getUserData, removeUAT } = useContext(DataContext);
   const { authState } = useContext(AuthContext);
   const [uatData, setUatData] = useState({
+    uat_id: "",
     uat_link: "",
     uat_script: "",
     uat_osa: "",
@@ -58,8 +59,11 @@ function Dashboard() {
   const [openToaster, setOpenToaster] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState({});
-  const [userStatus, setUserStatus] = useState(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
+
   const [openDialogId, setOpenDialogId] = useState(null);
+  const [openDialogToEditId, setOpenDialogToEditId] = useState(null);
+
+  const [userStatus, setUserStatus] = useState(userData?.privilegio === "administrador" ? "Administrador" : "Usuario");
 
   const { toast } = useToast();
   moment.locale("es");
@@ -111,7 +115,7 @@ function Dashboard() {
       }
     } catch (err) {
       const errorMessage = err.message;
-      console.warn(err.message);
+      console.log(err.message);
       setError(errorMessage);
 
       toast({
@@ -121,7 +125,7 @@ function Dashboard() {
         open: { openToaster },
       });
 
-      console.warn("Toaster mostrado");
+      console.log("Toaster mostrado");
       console.error(error);
       setOpenToaster(true);
     } finally {
@@ -160,7 +164,7 @@ function Dashboard() {
       console.log("UAT eliminada correctamente.");
     } catch (err) {
       const errorMessage = "Error al eliminar la UAT";
-      console.warn(err.message);
+      console.log(err.message);
       setError(errorMessage);
 
       toast({
@@ -170,7 +174,7 @@ function Dashboard() {
         open: { openToaster },
       });
 
-      console.warn("Toaster mostrado");
+      console.log("Toaster mostrado");
       console.error(error);
       setOpenToaster(true);
     } finally {
@@ -181,10 +185,16 @@ function Dashboard() {
     }
   };
 
+  // * Editar una UAT en el servidor
+  // ! EN DESARROLLO
+  const handleEditUAT = (id) => {
+    console.warn("El id de la UAT seleccionada es :", id);
+  };
+
   // * Importa todas las UATs del servidor
   const handleGetAllUATs = useCallback(async () => {
     try {
-      const uatData = await getAllUATs(); // getAllUATs() es la función que recuperará las UATs
+      const uatData = await getAllUATs(); // getAllUATs() es la función que recuperará las UATs, debes incluir la ID, para el proxy
       setUats(uatData);
       console.log("UATs recuperadas correctamente:", uatData);
     } catch (error) {
@@ -194,7 +204,7 @@ function Dashboard() {
 
   // * Importa las estadisticas de las UATs del servidor
   const handleGetStadisticsUATs = useCallback(async () => {
-    console.warn("Importando estadisticas");
+    console.log("Importando estadisticas");
     try {
       const uatStats = await getUATstadistics(); // getUATstadistics() es la función que recuperará las estadiscticas de las UATs
       setUatStats(uatStats);
@@ -215,6 +225,16 @@ function Dashboard() {
     }
   }, [getUserData]);
 
+  // // * Importa los datos del usuario desde el servidor
+  // const handleGetUserData = useCallback(async () => {
+  //   try {
+  //     await getUserData();
+  //     console.log("Datos de usuario actualizados en el contexto:", userData);
+  //   } catch (error) {
+  //     console.error("Hubo un problema al recuperar los datos del usuario:", error);
+  //   }
+  // }, [getUserData, userData]);
+
   console.debug("Datos de usuario en userData:", userData);
 
   // * Actiualiza los datos del Contexto DataContext
@@ -226,13 +246,13 @@ function Dashboard() {
 
   //! Actualiza los datos de privilegios del usuario
   useEffect(() => {
-    setUserStatus(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
+    setUserStatus(userData?.privilegio === "administrador" ? "Administrador" : "Usuario");
   }, [userData]);
 
   //DEBUGGING
   console.log("Valor de authState: " + JSON.stringify(authState));
   console.log("authState.user: ", authState.user);
-  console.log("Valor de uats: " + JSON.stringify(uats));
+  console.warn("Valor de uats: " + JSON.stringify(uats));
   console.log("Valor de uatStats: " + JSON.stringify(uatStats));
   console.log("Privilegios de usuario: " + userStatus);
 
@@ -380,7 +400,7 @@ function Dashboard() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>Edit</DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -403,6 +423,29 @@ function Dashboard() {
                                       onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                     >
                                       Delete
+                                    </Button>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                            {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                            {openDialogToEditId === uat.id && (
+                              <AlertDialog
+                                open={openDialogToEditId === uat.id}
+                                onOpenChange={() => setOpenDialogToEditId(null)}
+                              >
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This preset will no longer be accessible by you or
+                                      others you&apos;ve shared it with.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                      Edit
                                     </Button>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -491,7 +534,9 @@ function Dashboard() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>
+                                    Edit
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -514,6 +559,30 @@ function Dashboard() {
                                         onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                       >
                                         Delete
+                                      </Button>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+
+                              {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                              {openDialogToEditId === uat.id && (
+                                <AlertDialog
+                                  open={openDialogToEditId === uat.id}
+                                  onOpenChange={() => setOpenDialogToEditId(null)}
+                                >
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This preset will no longer be accessible by you or
+                                        others you&apos;ve shared it with.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                        Edit
                                       </Button>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -602,7 +671,9 @@ function Dashboard() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>
+                                    Edit
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -625,6 +696,30 @@ function Dashboard() {
                                         onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                       >
                                         Delete
+                                      </Button>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+
+                              {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                              {openDialogToEditId === uat.id && (
+                                <AlertDialog
+                                  open={openDialogToEditId === uat.id}
+                                  onOpenChange={() => setOpenDialogToEditId(null)}
+                                >
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This preset will no longer be accessible by you or
+                                        others you&apos;ve shared it with.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                        Edit
                                       </Button>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -713,7 +808,9 @@ function Dashboard() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => setOpenDialogToEditId(uat.id)}>
+                                    Edit
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem onSelect={() => setOpenDialogId(uat.id)}>Delete</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -736,6 +833,30 @@ function Dashboard() {
                                         onClick={() => handleDeleteUAT(uat.script, uat.link, uat.osa)}
                                       >
                                         Delete
+                                      </Button>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+
+                              {/* AlertDialog que se controla con el estado `isDialogOpen`  PARA EDITAR*/}
+                              {openDialogToEditId === uat.id && (
+                                <AlertDialog
+                                  open={openDialogToEditId === uat.id}
+                                  onOpenChange={() => setOpenDialogToEditId(null)}
+                                >
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Estás seguro de esta acción?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This preset will no longer be accessible by you or
+                                        others you&apos;ve shared it with.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <Button variant="destructive" onClick={() => handleEditUAT(uat.id)}>
+                                        Edit
                                       </Button>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
