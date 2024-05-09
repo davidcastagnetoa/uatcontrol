@@ -1,91 +1,83 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { DataContext } from "../context/DataContext.js";
 import { useToast } from "./ui/use-toast.js";
 import { Input } from "./ui/input.jsx";
 import { Label } from "./ui/label.jsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select.jsx";
 import { Button } from "./ui/button.jsx";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "./ui/form.jsx";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form.jsx";
+
+// Definición del esquema de validación con zod
+const FormSchema = z.object({
+  username: z.string().min(2, { message: "El nombre de usuario debe tener al menos 2 caracteres." }),
+  email: z.string().email({ message: "Debe ser un correo válido." }),
+  matricula: z.string().min(1, { message: "La matrícula es requerida." }),
+  privilegio: z.enum(["administrador", "usuario"], {
+    invalid_type_error: "Debe seleccionar un privilegio.",
+    required_error: "El privilegio es requerido.",
+  }),
+});
 
 const ProfileForm = () => {
   const [openToaster, setOpenToaster] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const { toast } = useToast();
-  const { upgradeUserData, getUserData } = useContext(DataContext);
-  const [userData, setUserData] = useState({
-    username: "",
-    email: "",
-    matricula: "",
-    privilegio: "",
+  const { upgradeUserData, getUserData, userData } = useContext(DataContext);
+
+  const form = useForm({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      username: userData?.username || "",
+      email: userData?.email || "",
+      matricula: userData?.matricula || "",
+      privilegio: userData?.privilegio || "usuario",
+    },
   });
 
-  const [userStatus, setUserStatus] = useState(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
-
-  // * Importa los datos del usuario desde el servidor
+  // Función para obtener datos del usuario
   const handleGetUserData = useCallback(async () => {
     try {
-      const user_data = await getUserData(); // getAllUATs() es la función que recuperará las UATs¨
-      console.warn("Datos de usuario recuperados:", user_data);
-      setUserData(user_data);
-      console.log("Datos de usuario en userData:", userData);
+      await getUserData();
+      form.reset({
+        username: userData?.username,
+        email: userData?.email,
+        matricula: userData?.matricula,
+        privilegio: userData?.privilegio,
+      });
     } catch (error) {
       console.error("Hubo un problema al recuperar los datos del usuario:", error);
     }
-  }, [getUserData]);
+  }, [getUserData, form, userData]);
 
-  // * Actualiza los datos del Contexto DataContext
   useEffect(() => {
-    handleGetUserData(); // Actualiza los datos del usuario disponibles
+    handleGetUserData();
   }, [handleGetUserData]);
 
-  // * useEffect se ejecutará después de cada renderizado cuando userData cambie. Se usa para los form
-  useEffect(() => {
-    console.warn("userData: " + JSON.stringify(userData));
-    setUserStatus(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
-  }, [userData]); // Dependencias: Este efecto depende de uatData.
-
-  // * Actualiza los datos del usuario en la DB
-  const handleUpgradeUser = async (e) => {
-    e.preventDefault();
-    console.log("Upgrade user");
+  // Función para actualizar el perfil del usuario
+  const onSubmit = async (data) => {
     setIsLoading(true);
-
     try {
-      if (!userData.username || !userData.matricula || !userData.privilegio) {
-        console.warn("Rellene todos los campos. Username: ", userData.uat_link);
-        console.warn("Rellene todos los campos. Matricula: ", userData.uat_osa);
-        console.warn("Rellene todos los campos. Privilegio: ", userData.uat_status);
-        setIsLoading(false);
-        throw new Error("Rellene todos los campos.");
-      }
-      const upgradeUser = await upgradeUserData(userData.username, userData.matricula, userData.privilegio);
-
+      const upgradeUser = await upgradeUserData(data?.username, data?.matricula, data?.privilegio);
       if (upgradeUser) {
-        console.log("Usuario actualizado correctamente: ", upgradeUser);
         toast({
-          variant: "default", //outline
+          variant: "default",
           title: "Usuario actualizado correctamente",
-          // description: "",
           open: { openToaster },
         });
-        setUserData({ username: "", email: "", matricula: "" });
         setOpenToaster(true);
       } else {
         throw new Error("No hay respuesta por parte del servidor. Intente más tarde.");
       }
     } catch (err) {
-      const errorMessage = err.message;
-      console.warn(err.message);
-      setError(errorMessage);
       toast({
         variant: "destructive",
         title: "Error al actualizar perfil de usuario",
-        description: errorMessage,
+        description: err.message,
         open: { openToaster },
       });
-      console.warn("Toaster mostrado");
-      console.error(error);
       setOpenToaster(true);
     } finally {
       handleGetUserData();
@@ -93,89 +85,77 @@ const ProfileForm = () => {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUserData((preUserData) => ({
-      ...preUserData,
-      [name]: value,
-    }));
-  };
-
   return (
     <div className="flex-1 lg:max-w-2xl">
       <div className="space-y-6">
-        {userData.picture && <img src={userData.picture} alt="avatar" className="rounded-full" />}
-        <form onSubmit={handleUpgradeUser} className="space-y-8">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Nombre de usuario
-            </Label>
-            <Input
-              id="username"
+        {userData?.picture && <img src={userData?.picture} alt="avatar" className="rounded-full" />}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
               name="username"
-              value={userData.username}
-              onChange={handleChange}
-              placeholder="Username"
-              type="text"
-              autoCapitalize="none"
-              autoCorrect="off"
-              // disabled={isLoading}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre de usuario</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Username" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Email
-            </Label>
-            <Input
-              disabled
-              id="email"
+            <FormField
+              control={form.control}
               name="email"
-              value={userData.email}
-              onChange={handleChange}
-              placeholder="Email"
-              type="text"
-              autoCapitalize="none"
-              autoCorrect="off"
-              // disabled={isLoading}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input disabled placeholder="Email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Matrícula
-            </Label>
-            <Input
-              id="matricula"
+            <FormField
+              control={form.control}
               name="matricula"
-              value={userData.matricula}
-              onChange={handleChange}
-              placeholder="Matricula"
-              type="text"
-              autoCapitalize="none"
-              autoCorrect="off"
-              // disabled={isLoading}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Matrícula</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Matrícula" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          {userStatus === "Administrador" && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Selecciona el nivel del usuario
-              </Label>
-              <Select
-                name="uat_script"
-                onValueChange={(value) => handleChange({ target: { name: "uat_script", value } })}
-              >
-                <SelectTrigger id="status" aria-label="Select status">
-                  <SelectValue placeholder={`Nivel actual : ${userData.privilegio}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="administrador">Administrador</SelectItem>
-                  <SelectItem value="usuario">Usuario</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <Button type="submit">Actualizar Perfil</Button>
-        </form>
+            {userData?.privilegio === "administrador" && (
+              <FormField
+                control={form.control}
+                name="privilegio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Selecciona el nivel del usuario</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value)} value={field.value}>
+                      <SelectTrigger id="status" aria-label="Select status">
+                        <SelectValue placeholder={`Nivel actual : ${field.value}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="administrador">Administrador</SelectItem>
+                        <SelectItem value="usuario">Usuario</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <Button type="submit" disabled={isLoading}>
+              Actualizar Perfil
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );
