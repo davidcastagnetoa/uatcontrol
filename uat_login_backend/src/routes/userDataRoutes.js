@@ -6,6 +6,7 @@ import {
   getUserProfile,
   updateUserProfileController,
   proxyUAT,
+  deleteUser,
 } from "../controllers/userDataController.js";
 import { verifyUserToken } from "../middleware/authMiddleware.js";
 
@@ -29,6 +30,9 @@ router.get("/proxy", verifyUserToken, proxyUAT);
 
 // * Ruta para actualizar datos de perfil del usuario
 router.put("/profile", verifyUserToken, updateUserProfileController);
+
+// * Ruta para eliminar a un usuario de la DB
+router.delete("/deleteUser", verifyUserToken, deleteUser);
 
 export default router;
 

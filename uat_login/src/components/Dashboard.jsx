@@ -211,8 +211,13 @@ function Dashboard() {
       console.log("Estadisticas de las UATs recuperadas:", uatStats);
     } catch (error) {
       console.error("Hubo un problema al recuperar las estadísticas de las UATs:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al cargar estadísticas",
+        description: error.message,
+      });
     }
-  }, [getUATstadistics]);
+  }, [getUATstadistics, toast]);
 
   // * Importa los datos de usuario del servidor
   const handleGetUserData = useCallback(async () => {
@@ -252,7 +257,7 @@ function Dashboard() {
   //DEBUGGING
   console.log("Valor de authState: " + JSON.stringify(authState));
   console.log("authState.user: ", authState.user);
-  console.warn("Valor de uats: " + JSON.stringify(uats));
+  // console.warn("Valor de uats: " + JSON.stringify(uats));
   console.log("Valor de uatStats: " + JSON.stringify(uatStats));
   console.log("Privilegios de usuario: " + userStatus);
 
@@ -278,44 +283,53 @@ function Dashboard() {
           )}
 
           {/* ESTADISTICAS EN PRODUCCION */}
-          {uatStats
-            .filter((stat) => stat.status === "En producción")
-            .map((stat) => (
-              <Card key={stat.status}>
-                <CardHeader className="pb-2">
-                  <CardDescription>UATs {stat.status}</CardDescription>
-                  <CardTitle className="text-4xl">{stat.count}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xs text-muted-foreground">
-                    {stat.percentage}% {stat.status}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
-                </CardFooter>
-              </Card>
-            ))}
+
+          {uatStats && uatStats.length > 0 ? (
+            uatStats
+              .filter((stat) => stat.status === "En producción")
+              .map((stat) => (
+                <Card key={stat.status}>
+                  <CardHeader className="pb-2">
+                    <CardDescription>UATs {stat.status}</CardDescription>
+                    <CardTitle className="text-4xl">{stat.count}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xs text-muted-foreground">
+                      {stat.percentage}% {stat.status}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
+                  </CardFooter>
+                </Card>
+              ))
+          ) : (
+            <div></div> // Fallback content if uatStats is empty
+          )}
 
           {/* ESTADISTICAS EN REVISION */}
-          {uatStats
-            .filter((stat) => stat.status === "En revisión")
-            .map((stat) => (
-              <Card key={stat.status}>
-                <CardHeader className="pb-2">
-                  <CardDescription>UATs {stat.status}</CardDescription>
-                  <CardTitle className="text-4xl">{stat.count}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xs text-muted-foreground">
-                    {stat.percentage}% {stat.status}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
-                </CardFooter>
-              </Card>
-            ))}
+          {uatStats && uatStats.length > 0 ? (
+            uatStats
+              .filter((stat) => stat.status === "En revisión")
+              .map((stat) => (
+                <Card key={stat.status}>
+                  <CardHeader className="pb-2">
+                    <CardDescription>UATs {stat.status}</CardDescription>
+                    <CardTitle className="text-4xl">{stat.count}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xs text-muted-foreground">
+                      {stat.percentage}% {stat.status}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Progress value={stat.percentage} aria-label={`${stat.percentage}% increase`} />
+                  </CardFooter>
+                </Card>
+              ))
+          ) : (
+            <div></div> // Fallback content if uatStats is empty
+          )}
         </div>
 
         {/* TABLAS DE UATS*/}

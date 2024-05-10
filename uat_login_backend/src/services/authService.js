@@ -65,6 +65,7 @@ const getGoogleUser = async (code) => {
       userName: payload.name,
       userEmail: payload.email,
       userPicture: payload.picture,
+      sub: payload.sub,
     };
     return userGoogleData;
   } catch (error) {
@@ -86,10 +87,12 @@ const getMicrosoftUser = async (authCode) => {
 
   try {
     const payload = await client.api("/me").get();
+    console.debug(`\nInformación del usuario de Microsoft: ${JSON.stringify(payload)}`);
     return {
       userName: payload.displayName,
       userEmail: payload.mail || payload.userPrincipalName,
       userPicture: "/default_avatar_route.png", // Asumiendo una imagen predeterminada
+      id: payload.id,
     };
   } catch (error) {
     console.error("Error al obtener el usuario de Microsoft: ", error);

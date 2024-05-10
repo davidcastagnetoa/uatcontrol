@@ -137,9 +137,9 @@ export const loginWithGoogle = async (req, res) => {
   const { code } = req.body;
 
   try {
-    const { userName, userEmail, userPicture } = await getGoogleUser(code);
+    const { userName, userEmail, userPicture, sub } = await getGoogleUser(code);
 
-    const userData = await insertOrUpdateGoogleUser(userName, userEmail, userPicture);
+    const userData = await insertOrUpdateGoogleUser(userName, userEmail, userPicture, undefined, undefined, sub);
 
     const googlePayload = {
       username: userData.username,
@@ -168,9 +168,9 @@ export const loginWithMicrosoft = async (req, res) => {
   const { authCode } = req.body;
 
   try {
-    const { userName, userEmail, userPicture } = await getMicrosoftUser(authCode);
+    const { userName, userEmail, userPicture, id } = await getMicrosoftUser(authCode);
 
-    const userData = await insertOrUpdateMicrosoftUser(userName, userEmail, userPicture);
+    const userData = await insertOrUpdateMicrosoftUser(userName, userEmail, userPicture, undefined, undefined, id);
 
     const microsoftPayload = {
       username: userData.username,

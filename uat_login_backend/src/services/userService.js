@@ -131,22 +131,56 @@ const insertOrUpdateGoogleUser = async (
   userEmail,
   userPicture,
   userMatricula = "unregistered",
-  userRoll = "usuario"
+  userRoll = "usuario",
+  sub
 ) => {
-  let user = await searchUserByEmail(userEmail);
-  if (!user) {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `INSERT INTO users (username, email, picture, matricula, usergroup) VALUES (?, ?, ?, ?, ?)`,
-        [userName, userEmail, userPicture, userMatricula, userRoll],
-        function (err) {
-          if (err) reject(new Error("Error al insertar el usuario"));
-          else resolve(this.lastID);
-        }
-      );
-    });
+  try {
+    let user = await searchUserByEmail(userEmail);
+
+    if (!user) {
+      return new Promise((resolve, reject) => {
+        // Inserta en la tabla users
+        db.run(
+          `INSERT INTO users (username, email, picture, matricula, usergroup) VALUES (?, ?, ?, ?, ?)`,
+          [userName, userEmail, userPicture, userMatricula, userRoll],
+          function (err) {
+            if (err) {
+              db.run("ROLLBACK");
+              reject(new Error("Error al insertar el usuario: " + err.message));
+            } else {
+              const userId = this.lastID;
+
+              // Inserta en la tabla auth_methods
+              db.run(
+                `INSERT INTO auth_methods (user_id, auth_type, auth_details) VALUES (?, 'google', ?)`,
+                [userId, sub], // `sub` se almacena en `auth_details`
+                (err) => {
+                  if (err) {
+                    db.run("ROLLBACK");
+                    reject(new Error("Error al establecer el método de autenticación: " + err.message));
+                  } else {
+                    db.run("COMMIT");
+                    resolve({
+                      id: userId,
+                      username: userName,
+                      email: userEmail,
+                      picture: userPicture,
+                      matricula: userMatricula,
+                      usergroup: userRoll,
+                    });
+                  }
+                }
+              );
+            }
+          }
+        );
+      });
+    }
+    return user;
+  } catch (error) {
+    console.error("Error en insertOrUpdateGoogleUser:", error.message);
+    throw error;
   }
-  return user;
 };
 
 /**
@@ -158,33 +192,51 @@ const insertOrUpdateMicrosoftUser = async (
   userEmail,
   userPicture,
   userMatricula = "unregistered",
-  userRoll = "usuario"
+  userRoll = "usuario",
+  id
 ) => {
-  let user = await searchUserByEmail(userEmail);
-  if (!user) {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `INSERT INTO users (username, email, picture, matricula, usergroup) VALUES (?, ?, ?, ?, ?)`,
-        [userName, userEmail, userPicture, userMatricula, userRoll],
-        function (err) {
-          if (err) {
-            reject(new Error("Error al insertar el usuario"));
-          } else {
-            resolve({
-              id: this.lastID,
-              username: userName,
-              email: userEmail,
-              picture: userPicture,
-              matricula: userMatricula,
-              usergroup: userRoll,
-            });
+  try {
+    let user = await searchUserByEmail(userEmail);
+
+    if (!user) {
+      return new Promise((resolve, reject) => {
+        db.run(
+          `INSERT INTO users (username, email, picture, matricula, usergroup) VALUES (?, ?, ?, ?, ?)`,
+          [userName, userEmail, userPicture, userMatricula, userRoll],
+          function (err) {
+            if (err) {
+              reject(new Error("Error al insertar el usuario: " + err.message));
+            } else {
+              const userId = this.lastID;
+
+              db.run(
+                `INSERT INTO auth_methods (user_id, auth_type, auth_details) VALUES (?, 'microsoft', ?)`,
+                [userId, id],
+                (err) => {
+                  if (err) {
+                    reject(new Error("Error al establecer el método de autenticación: " + err.message));
+                  } else {
+                    resolve({
+                      id: userId,
+                      username: userName,
+                      email: userEmail,
+                      picture: userPicture,
+                      matricula: userMatricula,
+                      usergroup: userRoll,
+                    });
+                  }
+                }
+              );
+            }
           }
-        }
-      );
-    });
-  } else {
-    // Opcionalmente actualizar los datos aquí si es necesario
-    return user;
+        );
+      });
+    } else {
+      return user;
+    }
+  } catch (error) {
+    console.error("Error en insertOrUpdateMicrosoftUser:", error.message);
+    throw error;
   }
 };
 
@@ -241,6 +293,51 @@ const updateUserProfile = async (email, { username, matricula, privilegio }) => 
     }
   });
 };
+/**
+// * Elimina a un usuario de la DB, ademas retorna los datos del usaurio despachado.
+// * Solo permitido a administradores
+*/
+const removeUserTarget = async (email) => {
+  return new Promise((resolve, reject) => {
+    // Inicia una transacción
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION");
+
+      // Primero, obtiene el user_id y otros datos basados en el email
+      db.get(`SELECT id, username, email, matricula FROM users WHERE email = ?`, [email], (err, row) => {
+        if (err) {
+          db.run("ROLLBACK");
+          reject(new Error("Error al buscar el usuario: " + err.message));
+        } else if (row) {
+          const userId = row.id;
+          const userData = { ...row }; // Copia los datos del usuario
+
+          // Elimina registros relacionados en auth_methods
+          db.run(`DELETE FROM auth_methods WHERE user_id = ?`, [userId], function (err) {
+            if (err) {
+              db.run("ROLLBACK");
+              reject(new Error("Error al eliminar métodos de autenticación: " + err.message));
+            } else {
+              // Finalmente, elimina al usuario
+              db.run(`DELETE FROM users WHERE id = ?`, [userId], function (err) {
+                if (err) {
+                  db.run("ROLLBACK");
+                  reject(new Error("Error al eliminar el usuario: " + err.message));
+                } else {
+                  db.run("COMMIT");
+                  resolve(userData); // Devuelve los datos del usuario eliminado
+                }
+              });
+            }
+          });
+        } else {
+          db.run("ROLLBACK");
+          reject(new Error("Usuario no encontrado"));
+        }
+      });
+    });
+  });
+};
 
 export {
   getUserByUsername,
@@ -251,4 +348,5 @@ export {
   insertOrUpdateGoogleUser,
   insertOrUpdateMicrosoftUser,
   updateUserProfile,
+  removeUserTarget,
 };

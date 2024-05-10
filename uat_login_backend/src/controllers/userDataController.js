@@ -1,4 +1,4 @@
-import { searchUserByEmail, updateUserProfile } from "../services/userService.js";
+import { removeUserTarget, searchUserByEmail, updateUserProfile } from "../services/userService.js";
 import {
   insertUatCollection,
   getAllUserUATsByEmail,
@@ -184,10 +184,51 @@ export const updateUserProfileController = async (req, res) => {
     });
   } catch (error) {
     if (error.message.includes("El nombre de usuario ya está en uso")) {
-      return res.status(409).json({ message: error.message });
+      console.error("El nombre de usuario ya está en uso:", error.message);
+      return res.status(409).json({ message: "El nombre de usuario ya está en uso" });
     }
 
     console.error("Error al actualizar el perfil del usuario:", error.message);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+// * Controlador para eliminar a un usuario de la DB
+export const deleteUser = async (req, res) => {
+  const { emailUserTarget } = req.body;
+  const { email } = req.user; // El email se obtiene del token decodificado por el middleware
+
+  try {
+    const userRequester = await searchUserByEmail(email);
+    if (userRequester.usergroup !== "administrador") {
+      return res.status(403).json({ message: "¡Denegado!, no estás autorizado a eliminar usuarios" });
+    }
+
+    const userTarget = await searchUserByEmail(emailUserTarget);
+    if (!userTarget) {
+      return res.status(404).json({ message: "Usuario a eliminar no encontrado" });
+    }
+
+    if (userRequester.id === userTarget.id) {
+      console.log("No puedes eliminarte a ti mismo");
+      return res.status(400).json({ message: "No puedes eliminarte a ti mismo" });
+    }
+
+    const removedUserTarget = await removeUserTarget(emailUserTarget);
+    if (!removedUserTarget) {
+      return res.status(400).json({ message: "No se pudo eliminar al usuario" });
+    }
+
+    res.json({
+      message: "Usuario eliminado correctamente",
+      userData: {
+        username: removedUserTarget.username,
+        email: removedUserTarget.email,
+        matricula: removedUserTarget.matricula,
+      },
+    });
+  } catch (error) {
+    console.error("Error al eliminar al usuario:", error.message);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };

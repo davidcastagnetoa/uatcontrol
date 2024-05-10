@@ -284,8 +284,12 @@ export const DataProvider = ({ children }) => {
           console.error("Acceso denegado. No tienes privilegios de administrador.");
           throw new Error("Acceso denegado. No tienes privilegios de administrador.");
         }
+        if (response.status === 409) {
+          console.error("El nombre de usuario ya está en uso. Elige otro nombre de usuario");
+          throw new Error("El nombre de usuario ya está en uso. Elige otro nombre de usuario.");
+        }
 
-        throw new Error(`Error al obtener los datos: ${errorBody}`);
+        throw new Error(`Error en el servidor, revisa el controlador: ${errorBody}`);
       }
       const data = await response.json();
       setUserData(data.userData); // Actualiza el estado con los datos recibidos
@@ -293,6 +297,44 @@ export const DataProvider = ({ children }) => {
       return data.userData; // Actualiza el estado del cliente con los datos recibidos
     } catch (error) {
       console.error("Error al Actualizar el usuario", error.message);
+      throw error;
+    }
+  };
+
+  // * Elimina al usuario de la base de datos, Solo disponible para administradores
+  const removeUser = async (emailUserTarget) => {
+    console.log("Eliminando usuario");
+
+    if (authState.status !== "authenticated") {
+      throw new Error("Usuario no autenticado");
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/api/deleteUser", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authState.token}`,
+        },
+        body: JSON.stringify({ emailUserTarget }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+
+        if (response.status === 400) {
+          console.error("No puedes eliminarte a ti mismo");
+          throw new Error("No puedes eliminarte a ti mismo");
+        }
+
+        throw new Error(`Error al eliminar el usuario: ${errorBody}`);
+      }
+      const data = await response.json();
+      setUserData(data.userData);
+      console.log("Usuario eliminado, datos recibidos:", data.userData);
+      return data.userData;
+    } catch (error) {
+      console.error("Error al eliminar el usuario", error.message);
       throw error;
     }
   };
@@ -308,6 +350,7 @@ export const DataProvider = ({ children }) => {
         getAllUsers,
         upgradeUserData,
         userData,
+        removeUser,
       }}
     >
       {children}
