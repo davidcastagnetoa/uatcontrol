@@ -24,7 +24,7 @@
     --input: 0 0% 89.8%;
     --ring: 0 72.2% 50.6%;
     --radius: 0.3rem;
-    --modalBackdrop: 266, 54%, 31%, 0.239;
+    --modalBackdrop: 0, 54%, 31%, 0.239;
   }
 
   .dark {
@@ -47,8 +47,12 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 72.2% 50.6%;
-    --modalBackdrop: 266, 54%, 31%, 0.239;
+    --modalBackdrop: 0, 54%, 31%, 0.3;
   }
+}
+
+.next-error-h1 {
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 @layer base {

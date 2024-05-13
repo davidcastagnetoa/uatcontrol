@@ -330,7 +330,7 @@ export const DataProvider = ({ children }) => {
         throw new Error(`Error al eliminar el usuario: ${errorBody}`);
       }
       const data = await response.json();
-      setUserData(data.userData);
+      // setUserData(data.userData);
       console.log("Usuario eliminado, datos recibidos:", data.userData);
       return data.userData;
     } catch (error) {

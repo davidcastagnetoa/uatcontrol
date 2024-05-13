@@ -279,26 +279,24 @@ const UserList = () => {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem>Edit</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={openDialog}>Delete</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setOpenDialogId(user.id)}>Delete</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
 
-                            {isDialogOpen === user.id && (
-                              <AlertDialog open={isDialogOpen === user.id} onOpenChange={setIsDialogOpen}>
+                            {openDialogId === user.id && (
+                              <AlertDialog open={openDialogId === user.id} onOpenChange={() => setOpenDialogId(null)}>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogTitle>¿Estas seguro de realizar ésta acción?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This action cannot be undone. This preset will no longer be accessible by you or
-                                      others you&apos;ve shared it with.
+                                      Esta accion no puede deshacer. El usuario {user.username} ya no tendrá acceso a
+                                      esta aplicacion y se eliminaran de la base de datos todos los recursos asociados a
+                                      él
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <Button
-                                      variant="destructive"
-                                      onClick={() => console.log("delete user, Endpoint aun en desarrollo")}
-                                    >
+                                    <Button variant="destructive" onClick={() => handleDeleteUser(user.email)}>
                                       Delete
                                     </Button>
                                   </AlertDialogFooter>
@@ -383,14 +381,15 @@ const UserList = () => {
                               </DropdownMenuContent>
                             </DropdownMenu>
 
-                            {isDialogOpen === user.id && (
-                              <AlertDialog open={isDialogOpen === user.id} onOpenChange={setIsDialogOpen}>
+                            {openDialogId === user.id && (
+                              <AlertDialog open={openDialogId === user.id} onOpenChange={() => setOpenDialogId(null)}>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogTitle>¿Estas seguro de realizar ésta acción?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This action cannot be undone. This preset will no longer be accessible by you or
-                                      others you&apos;ve shared it with.
+                                      Esta accion no puede deshacer. El usuario {user.username} ya no tendrá acceso a
+                                      esta aplicacion y se eliminaran de la base de datos todos los recursos asociados a
+                                      él
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>

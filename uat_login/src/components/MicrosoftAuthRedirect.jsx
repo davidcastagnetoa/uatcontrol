@@ -39,9 +39,15 @@ export const MicrosoftAuthRedirect = () => {
             .then(async (data) => {
               // Manejar la respuesta del servidor aquí
               console.log("Datos recibidos del servidor de la Aplicacion: ", data);
-              console.info("Token: ", data.token);
+              let accessToken = data.accessToken;
+              let refreshToken = data.refreshToken;
+
+              console.debug("Access Token: ", accessToken);
+              console.debug("Refresh Token: ", refreshToken);
               console.info("Login exitoso!");
-              localStorage.setItem("token", data.token);
+
+              localStorage.setItem("token", accessToken);
+              localStorage.setItem("refreshToken", refreshToken);
 
               const success = await verifyToken();
 

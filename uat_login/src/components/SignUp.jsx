@@ -72,9 +72,7 @@ function SignUp() {
         console.log("Redirigiendo a dashboard");
         navigate("/dashboard", { replace: true });
       } else {
-        throw new Error(
-          "No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider ."
-        );
+        throw new Error("No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider .");
       }
     } catch (error) {
       console.error("Error during server authentication:", error);
@@ -139,14 +137,12 @@ function SignUp() {
 
   return (
     <div className="w-full h-screen lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-12 h-screen">
         <div className="mx-auto grid w-[350px] gap-6">
           <ModeToggle />
           <div className="grid gap-2 text-center">
             <h1 className="text-3xl font-bold">Sign Up</h1>
-            <p className="text-balance text-muted-foreground">
-              Introduce tus datos para crear una cuenta
-            </p>
+            <p className="text-balance text-muted-foreground">Introduce tus datos para crear una cuenta</p>
           </div>
           {/* Form to handle user submission */}
           <form onSubmit={handleSubmit}>

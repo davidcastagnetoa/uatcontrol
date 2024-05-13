@@ -12,6 +12,46 @@ import {
 // - ESTE CONTROLADOR DEVUELVE LOS DATOS DEL USUARIO
  */
 
+// * Controlador para eliminar a un usuario de la DB
+export const deleteUser = async (req, res) => {
+  const { emailUserTarget } = req.body;
+  const { email } = req.user; // El email se obtiene del token decodificado por el middleware
+
+  try {
+    const userRequester = await searchUserByEmail(email);
+    if (userRequester.usergroup !== "administrador") {
+      return res.status(403).json({ message: "¡Denegado!, no estás autorizado a eliminar usuarios" });
+    }
+
+    const userTarget = await searchUserByEmail(emailUserTarget);
+    if (!userTarget) {
+      return res.status(404).json({ message: "Usuario a eliminar no encontrado" });
+    }
+
+    if (userRequester.id === userTarget.id) {
+      console.log("No puedes eliminarte a ti mismo");
+      return res.status(400).json({ message: "No puedes eliminarte a ti mismo" });
+    }
+
+    const removedUserTarget = await removeUserTarget(emailUserTarget);
+    if (!removedUserTarget) {
+      return res.status(400).json({ message: "No se pudo eliminar al usuario" });
+    }
+
+    res.json({
+      message: "Usuario eliminado correctamente",
+      userData: {
+        username: removedUserTarget.username,
+        email: removedUserTarget.email,
+        matricula: removedUserTarget.matricula,
+      },
+    });
+  } catch (error) {
+    console.error("Error al eliminar al usuario:", error.message);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 //  * Controlador para obtener todas las UAT de un usuario de la DB.
 export const getAllUserUATs = async (req, res) => {
   const { username, picture: userPicture, email: userEmail, matricula: userMatricula } = req.user;
@@ -41,7 +81,7 @@ export const getAllUserUATs = async (req, res) => {
 
 //  * Controlador para obtener datos de perfil del usuario
 export const getUserProfile = async (req, res) => {
-  console.log("\nObteniendo datos del Usuario...");
+  // console.log("\nObteniendo datos del Usuario...");
   const userEmail = req.user.email;
 
   try {
@@ -59,7 +99,7 @@ export const getUserProfile = async (req, res) => {
       privilegio: userData.usergroup,
     };
 
-    console.log("Datos de usuario cargados correctamente");
+    // console.log("Datos de usuario cargados correctamente");
     res.json(payload);
   } catch (err) {
     console.error("Error al obtener los datos del usuario:", err.message);
@@ -189,46 +229,6 @@ export const updateUserProfileController = async (req, res) => {
     }
 
     console.error("Error al actualizar el perfil del usuario:", error.message);
-    res.status(500).json({ message: "Error interno del servidor" });
-  }
-};
-
-// * Controlador para eliminar a un usuario de la DB
-export const deleteUser = async (req, res) => {
-  const { emailUserTarget } = req.body;
-  const { email } = req.user; // El email se obtiene del token decodificado por el middleware
-
-  try {
-    const userRequester = await searchUserByEmail(email);
-    if (userRequester.usergroup !== "administrador") {
-      return res.status(403).json({ message: "¡Denegado!, no estás autorizado a eliminar usuarios" });
-    }
-
-    const userTarget = await searchUserByEmail(emailUserTarget);
-    if (!userTarget) {
-      return res.status(404).json({ message: "Usuario a eliminar no encontrado" });
-    }
-
-    if (userRequester.id === userTarget.id) {
-      console.log("No puedes eliminarte a ti mismo");
-      return res.status(400).json({ message: "No puedes eliminarte a ti mismo" });
-    }
-
-    const removedUserTarget = await removeUserTarget(emailUserTarget);
-    if (!removedUserTarget) {
-      return res.status(400).json({ message: "No se pudo eliminar al usuario" });
-    }
-
-    res.json({
-      message: "Usuario eliminado correctamente",
-      userData: {
-        username: removedUserTarget.username,
-        email: removedUserTarget.email,
-        matricula: removedUserTarget.matricula,
-      },
-    });
-  } catch (error) {
-    console.error("Error al eliminar al usuario:", error.message);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };

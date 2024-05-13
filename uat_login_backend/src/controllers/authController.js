@@ -12,16 +12,16 @@ import {
 
 import {
   verifyPassword,
-  generateToken,
+  generateAccessToken,
+  generateRefreshToken,
   getGoogleUser,
   getMicrosoftUser,
   verifyToken,
+  verifyRefreshToken,
 } from "../services/authService.js";
 
-/**
 // * Esta función de autentificación recibe el usuario y contraseña del la funcion login del cliente
 // * en AuthProvider.js, y si son correctos genera y devuelve un token. Si no son correctos devuelve un 401.
- */
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -49,40 +49,71 @@ export const login = async (req, res) => {
       matricula: user.matricula,
     };
 
-    const token = generateToken(payload);
-    res.json({ token, userData: user });
+    const token = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    res.cookie("accessToken", token, { httpOnly: true, secure: true, sameSite: "Strict" });
+    res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true, sameSite: "Strict" });
+
+    res.json({ token, refreshToken, userData: user });
   } catch (error) {
     console.debug(error);
     res.status(500).json({ message: error.message });
   }
 };
 
-/**
 //  * Esta función verifica el token recibido por el cliente desde. AuthProvider.js en el header de la peticion
 //  * verifica si el token es valido y extrae de él la informacion del usuario.
- */
 export const verifyTokenController = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
+      console.log("No token found");
       return res.status(401).json({ message: "Token is missing" });
     }
 
-    const decodedUser = await verifyToken(token);
+    let decodedUser;
+    let newAccessToken;
+
+    try {
+      // Verificar token de acceso
+      decodedUser = await verifyToken(token);
+      console.log("Decoded user from access token:", decodedUser);
+    } catch (accessTokenError) {
+      console.log("Token de acceso fallido, probando token de refresco");
+
+      try {
+        decodedUser = await verifyRefreshToken(token);
+        console.log("Decoded user from refresh token:", decodedUser);
+
+        // Generar un nuevo token de acceso
+        newAccessToken = generateAccessToken({
+          username: decodedUser.username,
+          email: decodedUser.email,
+          picture: decodedUser.picture,
+          matricula: decodedUser.matricula,
+        });
+
+        console.log("Nuevo token de acceso generado:", newAccessToken);
+      } catch (refreshTokenError) {
+        console.log("Token de refresco fallido, revisa servicios");
+        return res.status(403).json({ message: "Token verification failed" });
+      }
+    }
 
     const userInfo = {
       valid: true,
       username: decodedUser.username || decodedUser.name,
       email: decodedUser.email,
       picture: decodedUser.picture,
-      token: token,
+      token: newAccessToken || token,
     };
 
     res.json(userInfo);
   } catch (error) {
-    console.log("Error in verifyTokenController:", error);
+    console.log("\nError in verifyTokenController:", error);
     if (error.name === "JsonWebTokenError") {
       return res.status(403).json({ message: "Token verification failed" });
     }
@@ -90,10 +121,8 @@ export const verifyTokenController = async (req, res) => {
   }
 };
 
-/**
 //  * Esta función da da alta a un usuario y registra sus datos en la DB. Si ya esta registrado devuelve un 409, o un 500
 //  * en caso de error. Caso contrario, registra al usuario en DB, genera y devuelve un token con los datos del usuario creado
- */
 export const signup = async (req, res) => {
   const { username, matricula, email, password } = req.body;
 
@@ -109,7 +138,6 @@ export const signup = async (req, res) => {
 
     const userId = await createUser(username, matricula, email, password);
     const user = await getUserById(userId);
-    const token = generateToken(user);
 
     const payload = {
       username: user.username,
@@ -118,10 +146,14 @@ export const signup = async (req, res) => {
       picture: user.picture,
     };
 
+    const token = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
     res.status(201).json({
       message: "Usuario creado exitosamente",
       token: token,
       userData: payload,
+      refreshToken: refreshToken,
     });
   } catch (error) {
     console.error("Error en el controlador signup:", error.message);
@@ -129,10 +161,8 @@ export const signup = async (req, res) => {
   }
 };
 
-/**
 //  * Esta función gestiona el proceso de inicio de sesión utilizando cuentas de Google. Autentica y registra o
 //  * actualiza usuarios mediante Google OAuth2, devolviendo un token JWT y los datos del usuario.
- */
 export const loginWithGoogle = async (req, res) => {
   const { code } = req.body;
 
@@ -149,9 +179,11 @@ export const loginWithGoogle = async (req, res) => {
       rol: userData.usergroup,
     };
 
-    const userToken = generateToken(googlePayload);
+    const accessToken = generateAccessToken(googlePayload);
+    const refreshToken = generateRefreshToken(googlePayload);
     res.status(200).json({
-      userToken,
+      accessToken,
+      refreshToken,
       userInfo: googlePayload,
     });
   } catch (err) {
@@ -160,10 +192,8 @@ export const loginWithGoogle = async (req, res) => {
   }
 };
 
-/**
 //  * Esta función autentica a los usuarios mediante Microsoft OAuth, recuperando y gestionando sus datos
 //  * desde la DB para luego generar un token JWT. Devuelve el token y los datos del usuario.
- */
 export const loginWithMicrosoft = async (req, res) => {
   const { authCode } = req.body;
 
@@ -180,9 +210,12 @@ export const loginWithMicrosoft = async (req, res) => {
       rol: userData.usergroup,
     };
 
-    const userToken = generateToken(microsoftPayload);
+    const accessToken = generateAccessToken(microsoftPayload);
+    const refreshToken = generateRefreshToken(microsoftPayload);
+
     res.status(200).json({
-      token: userToken,
+      accessToken,
+      refreshToken,
       user: microsoftPayload,
     });
   } catch (err) {
@@ -191,29 +224,9 @@ export const loginWithMicrosoft = async (req, res) => {
   }
 };
 
-// // EXPERIMENTAL, EN DESARROLLO
-
-// // Esta funcion recibe el token recibido por el cliente desde
-// // ProfilePage.js para actualizar los datos del usuario autenticado.
-// // Verificamos que el token sea correcto y luego actualizamos los campos
-// // correspondientes con los nuevos valores enviados por el cliente.
-// export const updateUser = async (req, res) => {
-//   const token = req.body.token;
-//   let user = await User.findByToken(token);
-
-//   // Comprobamos que el token sea correcto
-//   if (!user) return res.status(401).json({ message: "No autorizado" });
-
-//   // Actualizamos los campos del usuario
-//   user = await User.update(user._id, req.body);
-
-//   // Devolvemos al usuario actualizado
-//   res.json(user);
-// };
-
-// // Funcion encargada de cerrar la sesión del usuario autenticado.
-// // Envia un token vacío al cliente para que se desconecte.
-// // EXPERIMENTAL, EN DESARROLLO
-// export const logout = (req, res) => {
-//   res.json({ token: "" });
-// };
+// Funcion encargada de cerrar la sesión del usuario autenticado.
+// Envia un token vacío al cliente para que se desconecte.
+// EXPERIMENTAL, EN DESARROLLO
+export const logout = (req, res) => {
+  res.json({ token: "" });
+};

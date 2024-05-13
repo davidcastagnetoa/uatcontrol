@@ -30,7 +30,7 @@ function Login() {
     }));
   };
 
-  // Usando Custom GoogleLogin, Button component
+  // * Usando Custom GoogleLogin, Button component
   const handleGoogleSuccess = async (code) => {
     setIsLoading(true);
 
@@ -57,9 +57,12 @@ function Login() {
       console.log("Authenticated with the server successfully:", tokens);
 
       // Aquí puedes almacenar el token JWT en localStorage (o donde prefieras) para futuras autenticaciones
-      let token = tokens.userToken;
-      console.log("Token de la aplicacion: " + token);
-      localStorage.setItem("token", token);
+      let accessToken = tokens.accessToken;
+      let refreshToken = tokens.refreshToken;
+      console.log("Access Token de la aplicación: " + accessToken);
+      console.log("Refresh Token de la aplicación: " + refreshToken);
+      localStorage.setItem("token", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
 
       const success = await verifyToken();
       if (success) {
@@ -67,9 +70,7 @@ function Login() {
         console.log("Redirigiendo a dashboard");
         navigate("/dashboard", { replace: true });
       } else {
-        throw new Error(
-          "No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider ."
-        );
+        throw new Error("No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider .");
       }
     } catch (error) {
       console.error("Error during server authentication:", error);
@@ -136,7 +137,7 @@ function Login() {
           className="h-full w-full object-cover dark:brightness-[0.4] dark:grayscale"
         />
       </div>
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-12 h-screen">
         <div className="mx-auto grid w-[350px] gap-6">
           <ModeToggle />
           <div className="grid gap-2 text-center">

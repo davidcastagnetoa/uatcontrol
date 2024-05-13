@@ -6,6 +6,8 @@ import {
   loginWithGoogle,
   verifyTokenController,
 } from "../controllers/authController.js";
+import { UserRefreshClient } from "google-auth-library";
+import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from "../config.js";
 
 const router = express.Router();
 
@@ -24,15 +26,15 @@ router.post("/auth/microsoft", loginWithMicrosoft);
 //  * Ruta de Autenticación OAuth con Google
 router.post("/auth/google", loginWithGoogle);
 
-//! EN DESARROLLO, NO EN USO
 // * Ruta de Refresh Token de Google
 router.post("/auth/google/refresh-token", async (req, res) => {
   try {
-    const user = new UserRefreshClient(CLIENT_ID, CLIENT_SECRET, req.body.refreshToken);
-    const { credentials } = await user.refreshAccessToken(); // optain new tokens
+    const user = new UserRefreshClient(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, req.body.refreshToken);
+    const { credentials } = await user.refreshAccessToken(); // Obtén nuevos tokens
+    console.log("\n ..:: El token de refresco es: ", credentials);
     res.json(credentials);
   } catch (err) {
-    console.error("Ha ocurrido un error al verificar el token: " + err);
+    console.error("\n ..:: Ha ocurrido un error al verificar el token: " + err);
     res.status(401).send("Unauthorized");
   }
 });

@@ -2,32 +2,33 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { Client } from "@microsoft/microsoft-graph-client";
-import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET } from "../config.js";
+import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET, JWT_REFRESH_SECRET } from "../config.js";
 
-/**
- * Compara una contraseña proporcionada por el usuario con una contraseña,
- * hasheada almacenada, para validar el acceso del usuario.
- * */
+// * Compara una contraseña proporcionada por el usuario con una contraseña,
+// * hasheada almacenada, para validar el acceso del usuario.
 const verifyPassword = async (password, hashedPassword) => {
   return bcrypt.compareSync(password, hashedPassword);
 };
 
-/**
- * Genera un token JWT utilizando información del usuario, como el nombre de usuario y el correo electrónico.
- * Este token se utiliza para gestionar las sesiones y la autenticación a lo largo de la aplicación
- * */
-const generateToken = ({ username, email, picture, matricula }) => {
+// * Genera un access token JWT utilizando información del usuario, como el nombre de usuario y el correo electrónico.
+// * Este token se utiliza para gestionar las sesiones y la autenticación a lo largo de la aplicación
+const generateAccessToken = ({ username, email, picture, matricula }) => {
   const payload = { username, email, picture, matricula };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "15min" });
 };
 
-/**
- * Verifica la validez de un token JWT proporcionado. Utiliza la clave secreta de JWT para asegurar
- * que el token es legítimo y no ha sido modificado
- * */
-const verifyToken = (token) => {
+// * Genera un refresh token JWT utilizando información del usuario, Este Token se utiliza para mantener la sesión
+// * activa y refrescar el access token cuando sea necesario.
+const generateRefreshToken = ({ username, email, picture, matricula }) => {
+  const payload = { username, email, picture, matricula };
+  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "7d" });
+};
+
+// * Verifica la validez de un access token JWT proporcionado. Utiliza la clave secreta de JWT_SECRET
+// * para asegurar que el token es legítimo y no ha sido modificado
+const verifyToken = (token, secret = JWT_SECRET) => {
   return new Promise((resolve, reject) => {
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, secret, (err, decoded) => {
       if (err) {
         reject(err);
       } else {
@@ -37,10 +38,22 @@ const verifyToken = (token) => {
   });
 };
 
-/**
- * Esta función recibe un código de autorización y utiliza la API de Google para autenticar al usuario,
- * extrayendo y devolviendo sus datos principales como nombre, correo electrónico y foto de perfil.
- * */
+// * Verifica la validez de un refresh token JWT proporcionado. Utiliza la clave secreta de JWT_REFRESH_SECRET
+// * para asegurar que el token es legítimo y no ha sido modificado
+const verifyRefreshToken = (token) => {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, JWT_REFRESH_SECRET, (err, decoded) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(decoded);
+      }
+    });
+  });
+};
+
+// * Esta función recibe un código de autorización y utiliza la API de Google para autenticar al usuario,
+// * extrayendo y devolviendo sus datos principales como nombre, correo electrónico y foto de perfil.
 const getGoogleUser = async (code) => {
   const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "postmessage");
   try {
@@ -74,14 +87,12 @@ const getGoogleUser = async (code) => {
   }
 };
 
-/**
- * Esta función utiliza el código de autorización para autenticar y recuperar información básica del usuario de
- * Microsoft, Retorna esos datos para su uso en procesos de autenticación y registro.
- */
+// * Esta función utiliza el código de autorización para autenticar y recuperar información básica del usuario de
+// * Microsoft, Retorna esos datos para su uso en procesos de autenticación y registro.
 const getMicrosoftUser = async (authCode) => {
   const client = Client.init({
     authProvider: (done) => {
-      done(null, authCode); // Autenticar con el código proporcionado
+      done(null, authCode); // - Autenticar con el código proporcionado
     },
   });
 
@@ -100,4 +111,12 @@ const getMicrosoftUser = async (authCode) => {
   }
 };
 
-export { verifyPassword, generateToken, verifyToken, getGoogleUser, getMicrosoftUser };
+export {
+  verifyPassword,
+  generateAccessToken,
+  generateRefreshToken,
+  verifyToken,
+  verifyRefreshToken,
+  getGoogleUser,
+  getMicrosoftUser,
+};
