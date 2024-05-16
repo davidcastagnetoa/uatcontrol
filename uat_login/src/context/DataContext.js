@@ -11,35 +11,69 @@ export const DataProvider = ({ children }) => {
   const { authState } = useContext(AuthContext);
   const [userData, setUserData] = useState(null);
 
-  // * Guarda nueva UAT en DB y responde con un ok
-  const saveUAT = async (uatLink, uatScript, uatOSA, uatStatus) => {
+  // - Función para renovar el token de acceso
+  async function refreshTokenAndRetryRequest(url, options, originalRequestBody) {
     try {
-      if (authState.status !== "authenticated") {
-        throw new Error("Usuario no autenticado");
-      }
-
-      const response = await fetch("http://localhost:8080/api/save_uat_data", {
+      console.log("Refrescando token");
+      const refreshResponse = await fetch("http://localhost:8080/api/refresh_token", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
-        },
-        body: JSON.stringify({ uatLink, uatScript, uatOSA, uatStatus }),
+        credentials: "include", //! Necesario para incluir cookies
       });
 
-      if (!response.ok) {
-        // Podemos capturar más detalles del error si la respuesta incluye un cuerpo
-        const errorBody = await response.text();
-        throw new Error(`Error al guardar los datos: ${errorBody}`);
+      if (!refreshResponse.ok) throw new Error("Unable to refresh token");
+
+      const { token: newToken } = await refreshResponse.json();
+
+      // - Actualizar el estado con el nuevo token
+      authState.token = newToken;
+
+      //! Si la solicitud original necesita un cuerpo, lo incluiye nuevamente
+      if (originalRequestBody) {
+        options.body = JSON.stringify(originalRequestBody);
       }
 
-      console.log("Respuesta del servidor al guardar UAT: ", response);
-      return true; // Si response.ok es true, entonces la operación fue exitosa
+      options.headers.Authorization = `Bearer ${newToken}`;
+
+      const retryResponse = await fetch(url, options);
+      if (!retryResponse.ok) throw new Error("Request failed after token refresh");
+      return retryResponse;
     } catch (error) {
-      // Aquí manejamos cualquier error que haya sido lanzado en el bloque try
-      console.error("Ha ocurrido un error en saveUAT: ", error.message);
-      return false; // Indicar que la operación no fue exitosa
+      console.log("Error al refrescar el token: ", error.message);
+      throw error;
     }
+  }
+
+  // * Guarda nueva UAT en DB y responde con un ok
+  const saveUAT = async (uatLink, uatScript, uatOSA, uatStatus) => {
+    if (authState.status !== "authenticated") {
+      throw new Error("Usuario no autenticado");
+    }
+
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
+      },
+      body: JSON.stringify({ uatLink, uatScript, uatOSA, uatStatus }),
+    };
+
+    let response = await fetch("http://localhost:8080/api/save_uat_data", requestOptions);
+
+    //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+    console.log("Intentando refrescar el token y reintentar la solicitud");
+    if (!response.ok && (response.status === 401 || response.status === 403)) {
+      console.warn("Intentando refrescar el token y reintentar la solicitud");
+      response = await refreshTokenAndRetryRequest("http://localhost:8080/api/save_uat_data", requestOptions, {
+        uatLink,
+        uatScript,
+        uatOSA,
+        uatStatus,
+      });
+    }
+
+    console.log("Respuesta del servidor al guardar UAT: ", response);
+    return true;
   };
 
   // * Obtiene todos los UATs de la base de datos y los devuelve en un arreglo.
@@ -50,28 +84,33 @@ export const DataProvider = ({ children }) => {
         throw new Error("Usuario no autenticado");
       }
 
-      const response = await fetch("http://localhost:8080/api/get_uat_data", {
+      let requestOptions = {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
+          Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
         },
-      });
+      };
 
-      console.warn("Respuesta del servidor al obtener UATs: ", response);
+      let response = await fetch("http://localhost:8080/api/get_uat_data", requestOptions);
+
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      console.log("Intentando refrescar el token y reintentar la solicitud");
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest("http://localhost:8080/api/get_uat_data", requestOptions);
+        console.log("Respuesta del servidor al obtener UATs: ", response);
+      }
 
       if (!response.ok) {
-        // Si la respuesta no es satisfactoria, lanza un error.
         const errorBody = await response.text();
         throw new Error(`Error al obtener los datos: ${errorBody}`);
       }
 
-      // Si la respuesta es satisfactoria, procesa y devuelve los datos.
       const data = await response.json();
       console.log("UATs obtenidas del servidor: ", data.userUAT);
-      return data.userUAT; // Devuelve el arreglo de UATs.
+      return data.userUAT; //! Devuelve el arreglo de UATs.
     } catch (error) {
-      // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
       console.error("Error al obtener todos los UATs: ", error);
       throw error;
     }
@@ -86,97 +125,77 @@ export const DataProvider = ({ children }) => {
         throw new Error("Usuario no autenticado");
       }
 
-      const response = await fetch("http://localhost:8080/api/delete_uat_data", {
+      const requestOptions = {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
+          Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
         },
         body: JSON.stringify({ uatLink, uatScript, uatOSA }),
-      });
+      };
+
+      let response = await fetch("http://localhost:8080/api/delete_uat_data", requestOptions);
+
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest("http://localhost:8080/api/delete_uat_data", requestOptions, {
+          uatLink,
+          uatScript,
+          uatOSA,
+        });
+      }
 
       if (!response.ok) {
-        // Podemos capturar más detalles del error si la respuesta incluye un cuerpo
+        // Captura más detalles del error si la respuesta aún incluye un cuerpo
         const errorBody = await response.text();
-        throw new Error(`Error al guardar los datos: ${errorBody}`);
+        throw new Error(`Error al eliminar los datos: ${errorBody}`);
       }
 
       console.log("Respuesta del servidor al eliminar la UAT: ", response);
       return true; // Si response.ok es true, entonces la operación fue exitosa
     } catch (error) {
-      // Aquí manejamos cualquier error que haya sido lanzado en el bloque try
       console.error("Ha ocurrido un error en removeUAT: ", error.message);
       return false; // Indicar que la operación no fue exitosa
     }
   };
 
-  // * Obtiene las estadiscticas de las UATs de la base de datos y los devuelve en un arreglo.
+  // * Obtiene las estadísticas de las UATs de la base de datos y los devuelve en un arreglo.
   const getUATstadistics = async () => {
-    console.log("Obteniendo estadisticas de las UATs");
+    console.log("Obteniendo estadísticas de las UATs");
     try {
       if (authState.status !== "authenticated") {
         throw new Error("Usuario no autenticado");
       }
-      const response = await fetch("http://localhost:8080/api/stadistics", {
+
+      let requestOptions = {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
+          Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
         },
-      });
+      };
 
-      console.warn("Estadisticas de las UATs: ", response);
+      let response = await fetch("http://localhost:8080/api/stadistics", requestOptions);
+
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest("http://localhost:8080/api/stadistics", requestOptions);
+        console.log("Respuesta del servidor al obtener las estadísticas: ", response);
+      }
 
       if (!response.ok) {
-        // Si la respuesta no es satisfactoria, lanza un error.
         const errorBody = await response.text();
         throw new Error(`Error al obtener los datos: ${errorBody}`);
       }
 
-      // Si la respuesta es satisfactoria, procesa y devuelve los datos.
       const data = await response.json();
-      console.log("Estadisticas UATs: ", data.data);
-      return data.data; // Devuelve el arreglo de UATs Stadistics
+      console.log("Estadísticas UATs: ", data.data);
+      return data.data; //! Devuelve el arreglo de estadísticas de UATs.
     } catch (error) {
-      // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
-      console.error("Error al obtener las estadisticas de las UATs: ", error);
+      console.error("Error al obtener las estadísticas de las UATs: ", error);
       throw error;
-    }
-  };
-
-  // * Obtiene los datos de perfil del usuario logado
-  const getUserData = async () => {
-    console.log("Obteniendo datos del usuario");
-
-    if (authState.status !== "authenticated") {
-      throw new Error("Usuario no autenticado");
-    }
-
-    try {
-      const response = await fetch("http://localhost:8080/api/profile", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
-        },
-      });
-
-      console.warn("Respuesta del servidor los datos del usuario: ", response);
-
-      if (!response.ok) {
-        // Si la respuesta no es satisfactoria, lanza un error.
-        const errorBody = await response.text();
-        throw new Error(`Error al obtener los datos: ${errorBody}`);
-      }
-
-      // Si la respuesta es satisfactoria, procesa y devuelve los datos.
-      const userData = await response.json();
-      console.log("Datos de Usuario: ", userData);
-      return userData; // Devuelve el objeto
-    } catch (err) {
-      // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
-      // console.error("getUserData, Error al obtener los datos del usuario: ", err);
-      throw err;
     }
   };
 
@@ -187,67 +206,98 @@ export const DataProvider = ({ children }) => {
     if (authState.status !== "authenticated") {
       throw new Error("Usuario no autenticado");
     }
+
+    let requestOptions = {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
+      },
+    };
+
     try {
-      const response = await fetch("http://localhost:8080/api/user_lists", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
-        },
-      });
+      let response = await fetch("http://localhost:8080/api/user_lists", requestOptions);
 
-      console.warn("Respuesta del servidor los datos del usuario: ", response);
-
-      if (!response.ok) {
-        // Maneja la respuesta no satisfactoria según el código de estado HTTP
-        const errorBody = await response.text();
-
-        // Específicamente para un código 403
-        if (response.status === 403) {
-          console.error("Acceso denegado. No tienes privilegios de administrador.");
-          throw new Error("Acceso denegado. No tienes privilegios de administrador.");
-        }
-
-        // Para otros códigos de error
-        throw new Error(`Error al obtener los datos: ${errorBody}`);
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest("http://localhost:8080/api/user_lists", requestOptions);
+        console.log("Respuesta del servidor al obtener las estadísticas: ", response);
       }
 
-      // Si la respuesta es satisfactoria, procesa y devuelve los datos.
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`Error al obtener los datos de todos los usuarios: ${errorBody}`);
+        console.error("Acceso denegado. No tienes privilegios de administrador.");
+        throw new Error("Acceso denegado. No tienes privilegios de administrador.");
+      }
+
       const data = await response.json();
       console.log("Datos de Usuario obtenidos: ", data.userRows);
       return data.userRows;
-    } catch (err) {
-      // Maneja cualquier error que ocurra en la solicitud o en la respuesta.
-      // console.error("getAllUsers, Error al obtener los datos del usuario: ", err);
-      throw err;
+    } catch (error) {
+      console.error("Error al obtener los datos del usuario: ", error);
+      throw error;
     }
   };
 
-  // * Función para actualizar el estado de usuario
-  const updateUserData = useCallback(async () => {
+  // * Solicta los datos de perfil del usuario logado al servidor
+  const fetchUserData = async (handleData) => {
+    console.log("Obteniendo datos del usuario");
+
     if (authState.status !== "authenticated") {
       throw new Error("Usuario no autenticado");
     }
+
+    let requestOptions = {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
+      },
+    };
+
     try {
-      const response = await fetch("http://localhost:8080/api/profile", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
-        },
-      });
+      let response = await fetch("http://localhost:8080/api/profile", requestOptions);
+
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest("http://localhost:8080/api/profile", requestOptions);
+        console.log("Respuesta del servidor al obtener las estadísticas: ", response);
+      }
 
       if (!response.ok) {
         const errorBody = await response.text();
         throw new Error(`Error al obtener los datos: ${errorBody}`);
       }
 
-      const data = await response.json();
+      const userData = await response.json();
+      console.log("Datos de Usuario: ", userData);
+
+      // Handle data with callback
+      handleData(userData);
+
+      return userData; // Devuelve el objeto
+    } catch (error) {
+      console.error("Error al obtener los datos del usuario: ", error);
+      throw error;
+    }
+  };
+
+  // * Obtiene los datos de perfil del usuario logado
+  const getUserData = async () => {
+    return fetchUserData((userData) => {
+      console.log("Datos de Usuario obtenidos: ", userData);
+    });
+  };
+
+  // * Actualiza los datos del usuario logado
+  const updateUserData = useCallback(() => {
+    fetchUserData((data) => {
       setUserData(data); // Actualiza el estado global del usuario
       console.log("Datos de Usuario obtenidos y actualizados: ", data);
-    } catch (error) {
-      console.error("Error al obtener los datos del usuario:", error);
-    }
+    });
   }, [authState]);
 
   useEffect(() => {
@@ -265,36 +315,40 @@ export const DataProvider = ({ children }) => {
     }
     console.log("upgradeUserData - Datos del usuario: ", username, matricula, privilegio);
 
+    let requestOptions = {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
+      },
+      body: JSON.stringify({ username, matricula, privilegio }),
+    };
+
     try {
-      const response = await fetch("http://localhost:8080/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
-        },
-        body: JSON.stringify({ username, matricula, privilegio }),
-      });
+      let response = await fetch("http://localhost:8080/api/profile", requestOptions);
 
-      console.warn("Respuesta del servidor los datos del usuario: ", response);
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest("http://localhost:8080/api/profile", requestOptions);
+        console.log("Respuesta del servidor al obtener las estadísticas: ", response);
 
-      if (!response.ok) {
-        const errorBody = await response.text();
+        if (!response.ok) {
+          const errorBody = await response.text();
 
-        if (response.status === 403) {
-          console.error("Acceso denegado. No tienes privilegios de administrador.");
-          throw new Error("Acceso denegado. No tienes privilegios de administrador.");
+          if (response.status === 409) {
+            console.error("El nombre de usuario ya está en uso. Elige otro nombre de usuario");
+            throw new Error("El nombre de usuario ya está en uso. Elige otro nombre de usuario.");
+          }
+
+          throw new Error(`Error en el servidor, revisa el controlador: ${errorBody}`);
         }
-        if (response.status === 409) {
-          console.error("El nombre de usuario ya está en uso. Elige otro nombre de usuario");
-          throw new Error("El nombre de usuario ya está en uso. Elige otro nombre de usuario.");
-        }
-
-        throw new Error(`Error en el servidor, revisa el controlador: ${errorBody}`);
       }
+
       const data = await response.json();
-      setUserData(data.userData); // Actualiza el estado con los datos recibidos
+      setUserData(data.userData); //! Actualiza el estado con los datos recibidos
       console.log("Datos de Usuario actualizados: ", data.userData);
-      return data.userData; // Actualiza el estado del cliente con los datos recibidos
+      return data.userData; //* Actualiza el estado del cliente con los datos recibidos
     } catch (error) {
       console.error("Error al Actualizar el usuario", error.message);
       throw error;
@@ -309,30 +363,39 @@ export const DataProvider = ({ children }) => {
       throw new Error("Usuario no autenticado");
     }
 
+    let requestOptions = {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
+      },
+      body: JSON.stringify({ emailUserTarget }),
+    };
+
     try {
-      const response = await fetch("http://localhost:8080/api/deleteUser", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authState.token}`,
-        },
-        body: JSON.stringify({ emailUserTarget }),
-      });
+      let response = await fetch("http://localhost:8080/api/deleteUser", requestOptions);
 
-      if (!response.ok) {
-        const errorBody = await response.text();
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest("http://localhost:8080/api/deleteUser", requestOptions);
+        console.log("Respuesta del servidor al obtener las estadísticas: ", response);
 
-        if (response.status === 400) {
-          console.error("No puedes eliminarte a ti mismo");
-          throw new Error("No puedes eliminarte a ti mismo");
+        if (!response.ok) {
+          const errorBody = await response.text();
+
+          if (response.status === 400) {
+            console.error("No puedes eliminarte a ti mismo");
+            throw new Error("No puedes eliminarte a ti mismo");
+          }
+
+          throw new Error(`Error al eliminar el usuario: ${errorBody}`);
         }
-
-        throw new Error(`Error al eliminar el usuario: ${errorBody}`);
       }
+
       const data = await response.json();
-      // setUserData(data.userData);
       console.log("Usuario eliminado, datos recibidos:", data.userData);
-      return data.userData;
+      return data.userData; //! Devuelve el estado del cliente con los datos recibidos
     } catch (error) {
       console.error("Error al eliminar el usuario", error.message);
       throw error;

@@ -4,6 +4,7 @@ import {
   signup,
   loginWithMicrosoft,
   loginWithGoogle,
+  refreshNativeToken,
   verifyTokenController,
 } from "../controllers/authController.js";
 import { UserRefreshClient } from "google-auth-library";
@@ -26,17 +27,7 @@ router.post("/auth/microsoft", loginWithMicrosoft);
 //  * Ruta de Autenticación OAuth con Google
 router.post("/auth/google", loginWithGoogle);
 
-// * Ruta de Refresh Token de Google
-router.post("/auth/google/refresh-token", async (req, res) => {
-  try {
-    const user = new UserRefreshClient(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, req.body.refreshToken);
-    const { credentials } = await user.refreshAccessToken(); // Obtén nuevos tokens
-    console.log("\n ..:: El token de refresco es: ", credentials);
-    res.json(credentials);
-  } catch (err) {
-    console.error("\n ..:: Ha ocurrido un error al verificar el token: " + err);
-    res.status(401).send("Unauthorized");
-  }
-});
+//* Ruta de Refresh Token para obtener un nuevo token de acceso
+router.post("/refresh_token", refreshNativeToken);
 
 export default router;

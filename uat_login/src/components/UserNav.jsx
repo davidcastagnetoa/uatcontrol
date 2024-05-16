@@ -35,17 +35,17 @@ export function UserNav() {
     handleGetUserData();
   }, [handleGetUserData]);
 
-  console.log("Valor de authState: " + JSON.stringify(authState));
-  console.log("authState.user: ", authState.user);
-  console.warn("userData from DataContext: ", userData);
+  // console.log("Valor de authState: " + JSON.stringify(authState));
+  // console.log("authState.user: ", authState.user);
+  // console.warn("userData from DataContext: ", userData);
 
   const username = userData?.username ? userData.username : "Invitado";
   const email = userData?.email ? userData.email : "Invitado@invitado.com";
   const picture = userData?.picture ? userData.picture : "./ruta_invitado_avatar";
 
-  console.log("Valor de username: " + username);
-  console.log("Valor de email: " + email);
-  console.log("Ruta de picture: " + picture);
+  // console.log("Valor de username: " + username);
+  // console.log("Valor de email: " + email);
+  // console.log("Ruta de picture: " + picture);
 
   return (
     <DropdownMenu>

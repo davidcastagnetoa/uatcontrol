@@ -230,16 +230,6 @@ function Dashboard() {
     }
   }, [getUserData]);
 
-  // // * Importa los datos del usuario desde el servidor
-  // const handleGetUserData = useCallback(async () => {
-  //   try {
-  //     await getUserData();
-  //     console.log("Datos de usuario actualizados en el contexto:", userData);
-  //   } catch (error) {
-  //     console.error("Hubo un problema al recuperar los datos del usuario:", error);
-  //   }
-  // }, [getUserData, userData]);
-
   console.debug("Datos de usuario en userData:", userData);
 
   // * Actiualiza los datos del Contexto DataContext
@@ -255,11 +245,11 @@ function Dashboard() {
   }, [userData]);
 
   //DEBUGGING
-  console.log("Valor de authState: " + JSON.stringify(authState));
-  console.log("authState.user: ", authState.user);
+  // console.log("Valor de authState: " + JSON.stringify(authState));
+  // console.log("authState.user: ", authState.user);
   // console.warn("Valor de uats: " + JSON.stringify(uats));
-  console.log("Valor de uatStats: " + JSON.stringify(uatStats));
-  console.log("Privilegios de usuario: " + userStatus);
+  // console.log("Valor de uatStats: " + JSON.stringify(uatStats));
+  // console.log("Privilegios de usuario: " + userStatus);
 
   return (
     <>

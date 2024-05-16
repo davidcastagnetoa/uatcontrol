@@ -2,11 +2,10 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { cn } from "../../lib/utils";
-import { Button, buttonVariants } from "../ui/button";
+import { Button } from "../ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form.jsx";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
-import { useToast } from "../ui/use-toast.js";
+import { useTheme } from "../../context/ThemeProvider";
 
 // Definición del esquema de validación con zod
 const FormSchema = z.object({
@@ -18,22 +17,15 @@ const defaultValues = {
 };
 
 const Appearance = () => {
-  const { toast } = useToast();
+  const { setTheme } = useTheme();
   const form = useForm({
     resolver: zodResolver(FormSchema),
     defaultValues,
   });
 
   const onSubmit = (data) => {
-    toast({
-      variant: "default",
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    console.debug("Modo de colores asignado: ", data.theme);
+    setTheme(data.theme);
   };
 
   return (
@@ -45,8 +37,8 @@ const Appearance = () => {
             name="theme"
             render={({ field }) => (
               <FormItem className="space-y-1">
-                <FormLabel>Theme</FormLabel>
-                <FormDescription>Select the theme for the dashboard.</FormDescription>
+                <FormLabel>Tema de colores</FormLabel>
+                <FormDescription>Selecciona el modo de colores deseado.</FormDescription>
                 <FormMessage />
 
                 <RadioGroup

@@ -16,7 +16,7 @@ import {
   generateRefreshToken,
   getGoogleUser,
   getMicrosoftUser,
-  verifyToken,
+  verifyAccessToken,
   verifyRefreshToken,
 } from "../services/authService.js";
 
@@ -52,8 +52,21 @@ export const login = async (req, res) => {
     const token = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    res.cookie("accessToken", token, { httpOnly: true, secure: true, sameSite: "Strict" });
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true, sameSite: "Strict" });
+    console.log("\n Token de acceso generado en Login nativo es:", token);
+    console.log("\n Token de refresco generado en Login nativo es:", refreshToken);
+
+    res.cookie("accessToken", token, {
+      httpOnly: true,
+      secure: false, //! Solo activa 'secure' en producción
+      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+      sameSite: "Strict",
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false, //! Solo activa 'secure' en producción
+      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+      sameSite: "Strict",
+    });
 
     res.json({ token, refreshToken, userData: user });
   } catch (error) {
@@ -63,60 +76,75 @@ export const login = async (req, res) => {
 };
 
 //  * Esta función verifica el token recibido por el cliente desde. AuthProvider.js en el header de la peticion
-//  * verifica si el token es valido y extrae de él la informacion del usuario.
+//  * verifica si el token es valido y extrae de él la informacion del usuario. verifica el token de acceso, y si
+// * este está caducado lo intenta con el de refresco
 export const verifyTokenController = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
-      console.log("No token found");
+      console.log("No token found in verifyTokenController");
       return res.status(401).json({ message: "Token is missing" });
     }
 
     let decodedUser;
     let newAccessToken;
 
-    try {
-      // Verificar token de acceso
-      decodedUser = await verifyToken(token);
-      console.log("Decoded user from access token:", decodedUser);
-    } catch (accessTokenError) {
-      console.log("Token de acceso fallido, probando token de refresco");
-
+    // * Intentar verificar el token proporcionado, ya sea de acceso o de refresco
+    const verifyToken = async (tokenToVerify, isRefreshToken = false) => {
       try {
-        decodedUser = await verifyRefreshToken(token);
-        console.log("Decoded user from refresh token:", decodedUser);
+        if (isRefreshToken) {
+          decodedUser = await verifyRefreshToken(tokenToVerify);
+          console.log("Usuario decodificado desde Token de refresco: ", decodedUser);
+        } else {
+          decodedUser = await verifyAccessToken(tokenToVerify);
+          console.log("Decoded user from access token:", decodedUser);
+        }
 
-        // Generar un nuevo token de acceso
-        newAccessToken = generateAccessToken({
-          username: decodedUser.username,
-          email: decodedUser.email,
-          picture: decodedUser.picture,
-          matricula: decodedUser.matricula,
-        });
+        if (decodedUser) {
+          // * Generar un nuevo token de acceso si es necesario
+          newAccessToken = generateAccessToken({
+            username: decodedUser.username,
+            email: decodedUser.email,
+            picture: decodedUser.picture,
+            matricula: decodedUser.matricula,
+          });
 
-        console.log("Nuevo token de acceso generado:", newAccessToken);
-      } catch (refreshTokenError) {
-        console.log("Token de refresco fallido, revisa servicios");
-        return res.status(403).json({ message: "Token verification failed" });
+          console.log("Nuevo token de acceso generado:", newAccessToken);
+          return true;
+        }
+      } catch (error) {
+        if (isRefreshToken) {
+          console.log("Verification with refresh token failed");
+          throw new Error("Refresh token verification failed");
+        }
+        console.log("Access token verification failed, trying refresh token...");
+        // ! Si falla la verificación del token de acceso, intentar con el mismo token como de refresco
+        return verifyToken(tokenToVerify, true);
       }
-    }
-
-    const userInfo = {
-      valid: true,
-      username: decodedUser.username || decodedUser.name,
-      email: decodedUser.email,
-      picture: decodedUser.picture,
-      token: newAccessToken || token,
     };
 
-    res.json(userInfo);
-  } catch (error) {
-    console.log("\nError in verifyTokenController:", error);
-    if (error.name === "JsonWebTokenError") {
+    // * Iniciar la verificación con el token proporcionado como un token de acceso
+    const tokenIsValid = await verifyToken(token);
+
+    if (tokenIsValid) {
+      console.log("Access token verification successful");
+      const userInfo = {
+        valid: true,
+        username: decodedUser.username,
+        email: decodedUser.email,
+        picture: decodedUser.picture,
+        token: newAccessToken || token, // Devuelve el nuevo token o el token de acceso original
+      };
+
+      res.json(userInfo);
+    } else {
+      console.error("Access token verification failed");
       return res.status(403).json({ message: "Token verification failed" });
     }
+  } catch (error) {
+    console.log("\nError in verifyTokenController:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -181,6 +209,23 @@ export const loginWithGoogle = async (req, res) => {
 
     const accessToken = generateAccessToken(googlePayload);
     const refreshToken = generateRefreshToken(googlePayload);
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: false, //! Solo activa 'secure' en producción
+      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+      sameSite: "Strict",
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false, //! Solo activa 'secure' en producción
+      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+      sameSite: "Strict",
+    });
+
+    console.log("\n Token de acceso generado en Login de Google es:", accessToken);
+    console.log("\n Token de refresco generado en Login de Google es:", refreshToken);
+
     res.status(200).json({
       accessToken,
       refreshToken,
@@ -213,6 +258,22 @@ export const loginWithMicrosoft = async (req, res) => {
     const accessToken = generateAccessToken(microsoftPayload);
     const refreshToken = generateRefreshToken(microsoftPayload);
 
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: false, //! Solo activa 'secure' en producción
+      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+      sameSite: "Strict",
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false, //! Solo activa 'secure' en producción
+      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+      sameSite: "Strict",
+    });
+
+    console.log("\n Token de acceso generado en Login de Microsoft es:", accessToken);
+    console.log("\n Token de refresco generado en Login de Microsoft es:", refreshToken);
+
     res.status(200).json({
       accessToken,
       refreshToken,
@@ -221,6 +282,42 @@ export const loginWithMicrosoft = async (req, res) => {
   } catch (err) {
     console.error("Error en loginWithMicrosoft:", err);
     res.status(err.status || 500).send(err.message || "Internal Server Error");
+  }
+};
+
+// *  Refresca el token que se recibe desde el cliente mediante una cookie de sólo lectura
+// *  y devuelve un nuevo token de acceso.
+export const refreshNativeToken = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    console.log("No refresh token provided in /refresh_token");
+    return res.status(401).json({ message: "No refresh token provided" });
+  }
+  try {
+    // Verificar el refresh token usando el servicio importado
+    const userData = await verifyRefreshToken(refreshToken);
+
+    // Si el token es válido, genera un nuevo token de acceso con la información del usuario
+    const accessToken = generateAccessToken({
+      username: userData.username,
+      email: userData.email,
+      picture: userData.picture,
+      matricula: userData.matricula,
+    });
+
+    // Opcional: Enviar el nuevo token de acceso en una cookie (considera seguridad como HttpOnly, Secure flags)
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: false, //! Solo activa 'secure' en producción
+      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+      sameSite: "Strict",
+    });
+
+    // Devolver la respuesta con el nuevo token de acceso
+    res.json({ accessToken });
+  } catch (error) {
+    console.error("Failed to refresh token: ", error);
+    res.status(403).json({ message: "Invalid refresh token" });
   }
 };
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, Outlet } from "react-router-dom";
 import Login from "./components/Login";
 import SignUp from "./components/SignUp";
 import Dashboard from "./components/Dashboard";
@@ -14,7 +14,6 @@ import { DataProvider } from "./context/DataContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { MicrosoftAuthRedirect } from "./components/MicrosoftAuthRedirect";
 import NotFoundPage from "./components/NotFoundPage";
-import { TooltipProvider } from "./components/ui/tooltip";
 import UatsList from "./components/UatsList";
 import SettingsLayout from "./components/settings/SettingsLayout";
 import Appearance from "./components/settings/Appearance";
@@ -35,41 +34,72 @@ function App() {
           <DataProvider>
             <Router>
               <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/redirect/microsoft" element={<MicrosoftAuthRedirect />} />
 
-                {/* Nested routes for dashboard within Layout */}
-                <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Dashboard" isDashboard={true} /></ProtectedRoute>}>
-                  <Route path="dashboard" element={<Dashboard />} />
-                </Route>
-                {/* Nested routes for profile within Layout */}
-                <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Profile" /></ProtectedRoute>}>
-                  <Route path="profile" element={<Profile />} />
-                </Route>
-                {/* Nested routes for users within Layout */}
-                <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="User List" /></ProtectedRoute>}>
-                  <Route path="users" element={<UserList />} />
-                </Route>
-                {/* Nested routes for uats within Layout */}
-                <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="UAT List" /></ProtectedRoute>}>
-                  <Route path="uats" element={<UatsList />} />
-                </Route>
-                {/* Nested routes for proxy within Layout */}
-                <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Uat Page" /></ProtectedRoute>}>
-                  <Route path="proxy" element={<UATProxy />} />
-                </Route>
-                {/* Nested routes for settings within Layout */}
-                <Route path="/" element={<ProtectedRoute redirectTo="/login"><Layout pageTitle="Settings" /></ProtectedRoute>}>
-                  <Route path="settings" element={<SettingsLayout />}>
+                <Route path="/dashboard" element={
+                    <ProtectedRoute redirectTo="/login">
+                      <Layout pageTitle="Dashboard" isDashboard={true}>
+                        <Dashboard />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route path="/profile" element={
+                    <ProtectedRoute redirectTo="/login">
+                      <Layout pageTitle="Profile" isDashboard={false}>
+                        <Profile />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
 
-                  {/* Nested routes for settings within SettingsLayout */}
+                <Route path="/users" element={
+                    <ProtectedRoute redirectTo="/login">
+                      <Layout pageTitle="User List" isDashboard={false}>
+                        <UserList />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route path="/uats" element={
+                    <ProtectedRoute redirectTo="/login">
+                      <Layout pageTitle="UAT List" isDashboard={false}>
+                        <UatsList />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route path="/proxy" element={
+                    <ProtectedRoute redirectTo="/login">
+                      <Layout pageTitle="Uat Page" isDashboard={false}>
+                        <UATProxy />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Nested routes for settings within Layout */}
+                <Route path="/settings" element={
+                    <ProtectedRoute redirectTo="/login">
+                      <Layout pageTitle="Settings" isDashboard={false}>
+                        <SettingsLayout>
+                          <Outlet />
+                        </SettingsLayout>
+                      </Layout>
+                    </ProtectedRoute>
+                  }>
+                     {/* Nested routes for settings within SettingsLayout */}
                     <Route index element={<Profile />} />
                     <Route path="profile" element={<Profile />} />
                     <Route path="uats" element={<UatSettings />} />
                     <Route path="appearance" element={<Appearance />} />
                   </Route>
-                </Route>
 
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>

@@ -14,10 +14,10 @@ const verifyPassword = async (password, hashedPassword) => {
 // * Este token se utiliza para gestionar las sesiones y la autenticación a lo largo de la aplicación
 const generateAccessToken = ({ username, email, picture, matricula }) => {
   const payload = { username, email, picture, matricula };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "15min" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1min" });
 };
 
-// * Genera un refresh token JWT utilizando información del usuario, Este Token se utiliza para mantener la sesión
+// * Genera un refresh token JWT utilizando información del usuario, Este Token se utiliza para mantener l  a sesión
 // * activa y refrescar el access token cuando sea necesario.
 const generateRefreshToken = ({ username, email, picture, matricula }) => {
   const payload = { username, email, picture, matricula };
@@ -26,7 +26,7 @@ const generateRefreshToken = ({ username, email, picture, matricula }) => {
 
 // * Verifica la validez de un access token JWT proporcionado. Utiliza la clave secreta de JWT_SECRET
 // * para asegurar que el token es legítimo y no ha sido modificado
-const verifyToken = (token, secret = JWT_SECRET) => {
+const verifyAccessToken = (token, secret = JWT_SECRET) => {
   return new Promise((resolve, reject) => {
     jwt.verify(token, secret, (err, decoded) => {
       if (err) {
@@ -115,7 +115,7 @@ export {
   verifyPassword,
   generateAccessToken,
   generateRefreshToken,
-  verifyToken,
+  verifyAccessToken,
   verifyRefreshToken,
   getGoogleUser,
   getMicrosoftUser,

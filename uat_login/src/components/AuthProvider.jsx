@@ -1,9 +1,8 @@
 // AuthProvider.js
 import React, { useEffect, useState } from "react";
 import AuthContext from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
-// ESTE CONTEXTO SE ENCARGA DE GESTIONAR LA AUTENTICACIÓN DEL USUARIO
+// -  ESTE CONTEXTO SE ENCARGA DE GESTIONAR LA AUTENTICACIÓN DEL USUARIO
 
 const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
@@ -14,8 +13,6 @@ const AuthProvider = ({ children }) => {
     user: null,
   });
 
-  // const navigate = useNavigate();
-
   // * Función de login comprueba en el servidor, usuario y contraseña, si los datos son correctos
   // * se trae el token que genera el servidor y devuelve el true que necesita
   const login = async (username, password) => {
@@ -25,6 +22,7 @@ const AuthProvider = ({ children }) => {
       console.log("Llamando a endpoint http://localhost:8080/api/login");
       const response = await fetch("http://localhost:8080/api/login", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*", //AÑADIDO
@@ -79,6 +77,7 @@ const AuthProvider = ({ children }) => {
       console.log("Llamando a endpoint http://localhost:8080/api/signup");
       const response = await fetch("http://localhost:8080/api/signup", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
@@ -139,25 +138,30 @@ const AuthProvider = ({ children }) => {
 
       console.log("Token encontrado...", token);
       console.log("Llamando a endpoint http://localhost:8080/api/verifyToken");
+      console.log("Controlador verifyTokenController");
 
-      const response = await fetch("http://localhost:8080/api/verifyToken", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "Access-Control-Allow-Origin": "*",
-          Accept: "*/*",
-        },
-      });
+      // - Función auxiliar para intentar verificar un token dado
+      const tryVerifyToken = async (tokenToVerify) => {
+        const response = await fetch("http://localhost:8080/api/verifyToken", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tokenToVerify}`,
+            "Access-Control-Allow-Origin": "*",
+            Accept: "*/*",
+          },
+        });
 
-      console.warn("Respuesta recibida: ", response);
+        console.warn("Respuesta recibida: ", response);
+        if (!response.ok) {
+          throw new Error("Error en la verificación del token");
+        }
 
-      if (response.ok) {
         const data = await response.json();
-        console.log("Respuesta del servidor:", data);
+        console.log("..:: Respuesta del servidor: ", data);
 
         if (data.valid) {
-          localStorage.setItem("token", data.token);
+          localStorage.setItem("token", data.token); // Asumiendo que se recibe un nuevo token
 
           setAuthState({
             status: "authenticated",
@@ -173,40 +177,26 @@ const AuthProvider = ({ children }) => {
         } else {
           throw new Error("Token no válido");
         }
-      } else {
-        console.error("Respuesta NO recibida.");
-        throw new Error("Error en la verificación del token");
+      };
+
+      // * Intenta con el token de acceso primero
+      try {
+        return await tryVerifyToken(token);
+      } catch (error) {
+        console.log("Error con el token de acceso, intentando con el token de refresco: " + error);
+
+        // * Intenta con el token de refresco si el token de acceso falla
+        if (refreshToken) {
+          console.log("Token de refresco encontrado...", refreshToken);
+          return await tryVerifyToken(refreshToken);
+        } else {
+          throw new Error("No refresh token found");
+        }
       }
     } catch (error) {
-      console.log("Error al verificar Token: " + error);
-      // setAuthState({ status: "anonymous", token: null, refreshToken: null });
-      // localStorage.removeItem("token");
-      // localStorage.removeItem("refreshToken");
+      console.log("Error al verificar los tokens: " + error);
+      setAuthState({ status: "anonymous", token: null, refreshToken: null });
       return false;
-    }
-  };
-
-  // * Función para solicitar un nuevo access token
-  const refreshAccessToken = async () => {
-    console.warn("Token de Google vencido, Refrescando Token...");
-    try {
-      const response = await fetch("http://localhost:8080/api/auth/google/refresh-token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refreshToken: authState.refreshToken }),
-      });
-
-      if (!response.ok) {
-        throw new Error("No se pudo refrescar el token");
-      }
-
-      const data = await response.json();
-      setAuthState({ ...authState, token: data.access_token }); // Actualiza el estado con el nuevo token
-    } catch (error) {
-      console.error("Error al refrescar el token:", error);
-      // logout(); // ! Cierra sesión si no se puede refrescar el token
     }
   };
 
@@ -223,29 +213,10 @@ const AuthProvider = ({ children }) => {
     verifyToken();
   }, []);
 
-  // * Efecto para verificar y refrescar el token
-  useEffect(() => {
-    const checkAndRefreshToken = async () => {
-      try {
-        const tokenValid = await verifyToken();
-        if (!tokenValid && authState.refreshToken) {
-          await refreshAccessToken();
-        }
-      } catch (error) {
-        console.error("Error al verificar y refrescar el token:", error);
-      }
-    };
-
-    if (authState.status === "authenticated") {
-      const interval = setInterval(checkAndRefreshToken, 60 * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [authState.status]);
-
-  // Pasar el estado de autenticación y las acciones a los consumidores
+  // * Pasar el estado de autenticación y las acciones a los consumidores
   console.log("Contenido de authState: " + JSON.stringify(authState));
   return (
-    <AuthContext.Provider value={{ authState, setAuthState, login, signup, verifyToken, refreshAccessToken, logout }}>
+    <AuthContext.Provider value={{ authState, setAuthState, login, signup, verifyToken, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -24,7 +24,7 @@ router.delete("/delete_uat_data", verifyUserToken, removeUserUAT);
 // * Ruta para obtener datos de perfil del usuario
 router.get("/profile", verifyUserToken, getUserProfile);
 
-// * Ruta para obtener la url de la UAT y redirigir al cliente sin mostrar la url (*)
+// - Ruta para obtener la url de la UAT y redirigir al cliente sin mostrar la url (*)
 //! EN DESARROLLO
 router.get("/proxy", verifyUserToken, proxyUAT);
 

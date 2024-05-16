@@ -28,6 +28,7 @@ export const MicrosoftAuthRedirect = () => {
 
           fetch("http://localhost:8080/api/auth/microsoft", {
             method: "POST",
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*",
