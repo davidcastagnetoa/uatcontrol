@@ -3,13 +3,19 @@ import {
   insertUatCollection,
   getAllUserUATsByEmail,
   deleteUserUATById,
-  getUATUrlById,
+  getUATUrlByEmailAndId,
+  getUATById,
+  isAdmin,
 } from "../services/uatService.js";
 
 /**
 // - ESTE CONTROLADOR PASA POR EL MIDDLEWARE PARA
 // - VERIFICAR AL USUARIO YA QUE ES UNA RUTA PROTEGIDA
 // - ESTE CONTROLADOR DEVUELVE LOS DATOS DEL USUARIO
+// - Y LOS DATOS DEL USUARIO QUE SE PASO POR PARAMETRO
+// - EN LA URL.
+ // ! LOS DATOS req.user SE OBTIENEN DEL TOKEN DECODIFICADO POR
+ // ! EL MIDDLEWARE
  */
 
 // * Controlador para eliminar a un usuario de la DB
@@ -112,19 +118,85 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-//  * Controlador para obtener la url de la UAT y redirigir al cliente a esta URL
-// ! EN DESARROLLO
+//  - Controlador para obtener la url de la UAT y redirigir al cliente a esta URL
 export const proxyUAT = async (req, res) => {
-  const { uatId } = req.query; // ! el ID de UAT se pasa como un parámetro de consulta desde el cliente
-  const { id: userId } = req.user;
+  const { uatId } = req.query;
+  const userEmail = req.user.email;
+  const cookie = req.headers.cookie;
+
+  // if (cookie) {
+  //   console.log("\n Cookie enviada en peticion:", cookie);
+  // }
+
+  if (!uatId) {
+    return res.status(400).send("Error, se requiere el ID de la UAT");
+  }
+  if (!userEmail) {
+    return res.status(400).send("Error, se requiere el email del usuario");
+  }
 
   try {
-    const uatUrl = await getUATUrlById(userId, uatId);
-    if (!uatUrl) {
-      return res.status(404).send("UAT not found");
+    console.log("\nComprobando UAT...");
+    const uat = await getUATById(uatId);
+
+    if (!uat) {
+      return res.status(404).send("UAT no encontrada");
     }
-    // Redireccionar al cliente a la URL obtenida
-    res.redirect(uatUrl);
+
+    try {
+      // * Verifica si el usuario es administrador
+      await isAdmin(userEmail);
+      console.log(`Administrador ${userEmail} identificado. Accediendo a recurso`);
+      console.log("Redirigiendo a enlace protegido:", uat.link);
+
+      const link = uat.link;
+      console.log("Enlace protegido:", link);
+      fetch(link, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Connection: "keep-alive",
+        },
+      })
+        .then((uatResponse) => {
+          console.log("\n\n ::::: Respuesta de la UAT:", uatResponse);
+          const cookies = uatResponse.headers.get("set-cookie");
+          if (cookies) {
+            console.log("\n :::Cookies recibida en peticion:", cookies);
+            res.cookie("connect.sid", cookies, { httpOnly: true, secure: false });
+          }
+          res.json({ url: link });
+        })
+        .catch((err) => {
+          console.error("Error al obtener la UAT:", err);
+          res.status(500).send("Internal Server Error");
+        });
+
+      // res.redirect(uat.link);
+    } catch (adminError) {
+      // * Si no es administrador, verifica si tiene acceso a la UAT
+      const uatUrl = await getUATUrlByEmailAndId(userEmail, uatId);
+      if (!uatUrl) {
+        console.error(`Error, el usuario ${userEmail} no tiene acceso a esta UAT`);
+        return res.status(403).send("No tienes acceso a esta UAT");
+      }
+      //! Redireccionar al cliente a la URL obtenida
+      console.log("Redirigiendo a enlace protegido:", uatUrl);
+
+      const { link } = uatUrl;
+      fetch(link, { method: "GET" })
+        .then((uatResponse) => {
+          // Puedes optar por enviar solo la URL al cliente
+          res.json({ url: link });
+        })
+        .catch((err) => {
+          console.error("Error al obtener la UAT:", err);
+          res.status(500).send("Internal Server Error");
+        });
+
+      // res.redirect(uatUrl);
+    }
   } catch (err) {
     console.error("Error al redireccionar a la UAT:", err);
     res.status(500).send("Internal Server Error");

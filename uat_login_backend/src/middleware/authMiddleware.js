@@ -16,6 +16,7 @@ export const verifyUserToken = async (req, res, next) => {
     const decoded = await verifyAccessToken(accessToken);
     console.log("Decoded user from access token:", decoded);
     req.user = decoded;
+
     next();
   } catch (err) {
     console.error("MIDDLEWARE, Error al validar el token de acceso");

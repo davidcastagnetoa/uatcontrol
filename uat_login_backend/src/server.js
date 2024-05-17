@@ -48,7 +48,7 @@ const gracefulShutdown = () => {
   console.log("Cerrando el servidor...");
   server.close(() => {
     console.log("Servidor cerrado.");
-    // Cierre de base de datos
+    // * Cierre de base de datos
     closeDatabase();
   });
 };

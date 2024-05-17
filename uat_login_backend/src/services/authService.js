@@ -14,7 +14,7 @@ const verifyPassword = async (password, hashedPassword) => {
 // * Este token se utiliza para gestionar las sesiones y la autenticación a lo largo de la aplicación
 const generateAccessToken = ({ username, email, picture, matricula }) => {
   const payload = { username, email, picture, matricula };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1min" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 };
 
 // * Genera un refresh token JWT utilizando información del usuario, Este Token se utiliza para mantener l  a sesión

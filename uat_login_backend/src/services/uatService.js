@@ -55,19 +55,39 @@ const getAllUserUATsByEmail = (email) => {
   });
 };
 
-// * Recupera específicamente la URL de una UAT que se necesita para el proxy
-const getUATUrlById = (userId, uatId) => {
+// - Obtiene la ID de la UAT a buscar, Solo para comprobar su existencia
+const getUATById = (uatId) => {
   return new Promise((resolve, reject) => {
-    db.get(`SELECT url FROM uat_collection WHERE user_id = ? AND id = ?`, [userId, uatId], (err, row) => {
+    db.get(`SELECT * FROM uat_collection WHERE id = ?`, [uatId], (err, row) => {
       if (err) {
-        console.error("Error al obtener la URL de UAT:", err.message);
+        console.error("Error al buscar la UAT por ID:", err.message);
         reject(err);
-      } else if (row) {
-        resolve(row.url);
       } else {
-        resolve(null);
+        resolve(row);
       }
     });
+  });
+};
+
+// - Recupera específicamente la URL de una UAT que se necesita para el proxy
+const getUATUrlByEmailAndId = (userEmail, uatId) => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT u.link FROM uat_collection u JOIN users usr ON u.user_id = usr.id WHERE usr.email = ? AND u.id = ?`,
+      [userEmail, uatId],
+      (err, row) => {
+        if (err) {
+          console.debug("\nError al obtener la URL de UAT:", err.message);
+          reject(err);
+        } else if (row) {
+          console.debug("\nUAT encontrada");
+          resolve(row.link);
+        } else {
+          console.debug("\nNo existe UAT");
+          resolve(null);
+        }
+      }
+    );
   });
 };
 
@@ -172,7 +192,7 @@ const getAllUserByAdmin = async (email) => {
   return getAllUsers();
 };
 
-//  * Actualiza en la Base de Datos una UAT segun el usuario al que pertenece , su script, link y osa
+// - Actualiza en la Base de Datos una UAT segun el usuario al que pertenece , su script, link y osa
 // ! EN DESARROLLO
 const updateUatCollection = (userId, uatId, updates) => {
   // Implementar lógica para actualizar una UAT específica
@@ -206,9 +226,11 @@ export {
   deleteUserUATById,
   getAllUserByAdmin,
   getAllUserUATsByEmail,
-  getUATUrlById,
+  getUATById,
+  getUATUrlByEmailAndId,
   getUserUATByParams,
   getUserUATsStatusCountsByEmail,
   insertUatCollection,
+  isAdmin,
   updateUatCollection,
 };
