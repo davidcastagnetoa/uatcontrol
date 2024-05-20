@@ -26,7 +26,6 @@ export const getAllUsers = async (req, res) => {
 
   try {
     const userRows = await getAllUserByAdmin(userEmail);
-    console.debug(`Usuarios Encontrados: ${userRows.length}`);
 
     const responseData = {
       userRows: userRows.length > 0 ? userRows : [],

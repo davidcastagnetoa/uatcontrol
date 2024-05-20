@@ -8,14 +8,17 @@ import {
   isAdmin,
 } from "../services/uatService.js";
 
+import { CookieJar } from "tough-cookie";
+import fetchCookie from "fetch-cookie";
+
 /**
 // - ESTE CONTROLADOR PASA POR EL MIDDLEWARE PARA
 // - VERIFICAR AL USUARIO YA QUE ES UNA RUTA PROTEGIDA
 // - ESTE CONTROLADOR DEVUELVE LOS DATOS DEL USUARIO
 // - Y LOS DATOS DEL USUARIO QUE SE PASO POR PARAMETRO
 // - EN LA URL.
- // ! LOS DATOS req.user SE OBTIENEN DEL TOKEN DECODIFICADO POR
- // ! EL MIDDLEWARE
+ // ! LOS DATOS req.user SE OBTIENEN DEL TOKEN 
+ // ! DECODIFICADO POR EL MIDDLEWARE
  */
 
 // * Controlador para eliminar a un usuario de la DB
@@ -118,15 +121,10 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-//  - Controlador para obtener la url de la UAT y redirigir al cliente a esta URL
+// - Controlador para obtener la url de la UAT y redirigir al cliente a esta URL (EN DESARROLLO)
 export const proxyUAT = async (req, res) => {
   const { uatId } = req.query;
   const userEmail = req.user.email;
-  const cookie = req.headers.cookie;
-
-  // if (cookie) {
-  //   console.log("\n Cookie enviada en peticion:", cookie);
-  // }
 
   if (!uatId) {
     return res.status(400).send("Error, se requiere el ID de la UAT");
@@ -151,21 +149,53 @@ export const proxyUAT = async (req, res) => {
 
       const link = uat.link;
       console.log("Enlace protegido:", link);
+
+      const cookieJar = new CookieJar();
+      const fetchWithCookies = fetchCookie(fetch, cookieJar);
+
+      // Realizar la autenticación y obtener las cookies
+      const linkAccess = "http://gus.gtm.securitasdirect.local:3002/auth/signin";
+      const payload = JSON.stringify({
+        username: "DI4697",
+        password: "Castagneto.DI4697",
+      });
+
+      try {
+        const loginResponse = await fetchWithCookies(linkAccess, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            Connection: "keep-alive",
+          },
+          body: payload,
+        });
+
+        if (!loginResponse.ok) {
+          throw new Error("Error en la autenticación");
+        }
+
+        // - Guardar las cookies en la sesión del usuario
+        req.cookies = cookieJar.getCookiesSync(linkAccess);
+        var gatheredCookies = req.cookies;
+        console.log("Cookies obtenidas:", gatheredCookies);
+      } catch (err) {
+        console.error("Error en la autenticación:", err);
+        res.status(500).send("Error en la autenticación");
+      }
+
+      //! Segunda petición, para acceder a recursos del servidor
       fetch(link, {
         method: "GET",
         credentials: "include",
         headers: {
           "Content-Type": "application/json; charset=utf-8",
           Connection: "keep-alive",
+          Cookie: gatheredCookies,
         },
       })
         .then((uatResponse) => {
-          console.log("\n\n ::::: Respuesta de la UAT:", uatResponse);
-          const cookies = uatResponse.headers.get("set-cookie");
-          if (cookies) {
-            console.log("\n :::Cookies recibida en peticion:", cookies);
-            res.cookie("connect.sid", cookies, { httpOnly: true, secure: false });
-          }
+          // console.log("\n\n ::::: Respuesta de la UAT:", uatResponse);
+          res.cookie(gatheredCookies);
           res.json({ url: link });
         })
         .catch((err) => {
@@ -185,9 +215,18 @@ export const proxyUAT = async (req, res) => {
       console.log("Redirigiendo a enlace protegido:", uatUrl);
 
       const { link } = uatUrl;
-      fetch(link, { method: "GET" })
+      fetch(link, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Connection: "keep-alive",
+          Cookie: gatheredCookies,
+        },
+      })
         .then((uatResponse) => {
-          // Puedes optar por enviar solo la URL al cliente
+          // console.log("\n\n ::::: Respuesta de la UAT:", uatResponse);
+          res.cookie(gatheredCookies);
           res.json({ url: link });
         })
         .catch((err) => {

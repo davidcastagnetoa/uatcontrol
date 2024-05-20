@@ -168,9 +168,15 @@ const insertUatCollection = (userId, script, link, osa, status) => {
 // * Verifica si un usuario es administrador
 const isAdmin = async (email) => {
   const user = await searchUserByEmail(email);
-  if (!user || user.usergroup !== "administrador") {
+  if (!user) {
+    console.log("El usuario no existe.");
+    throw new Error("El usuario no existe.");
+  }
+  if (user.usergroup !== "administrador") {
+    console.log("Acceso denegado. No tienes privilegios de administrador.");
     throw new Error("Acceso denegado. No tienes privilegios de administrador.");
   }
+  return true;
 };
 
 // * Obtiene todos los usuarios

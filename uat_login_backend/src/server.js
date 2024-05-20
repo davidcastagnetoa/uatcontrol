@@ -22,6 +22,7 @@ app.use(cookieParser());
 // Configuración de CORS para permitir solicitudes con credenciales
 const corsOptions = {
   origin: "http://localhost:3000", // Especifica el origen permitido
+  // origin: "http://127.0.0.1:3000", // Especifica el origen permitido
   credentials: true, // Permite el envío de cookies y headers de autenticación
   optionsSuccessStatus: 200, // Algunos navegadores (IE11, varios SmartTVs) fallan con 204
 };

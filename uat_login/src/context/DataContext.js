@@ -76,6 +76,48 @@ export const DataProvider = ({ children }) => {
     return true;
   };
 
+  // - Funcion para solicitar una UAT específica a través del proxy del servidor y navegar a el
+  const fetchUATProxy = async (uatId) => {
+    console.log("Solicitando UAT a través de proxy");
+
+    if (authState.status !== "authenticated") {
+      throw new Error("Usuario no autenticado");
+    }
+
+    let requestOptions = {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authState.token}|${authState.refreshToken}`,
+      },
+    };
+
+    try {
+      let response = await fetch(`http://localhost:8080/api/proxy?uatId=${uatId}`, requestOptions);
+
+      //! Si la respuesta no es satisfactoria, intenta renovar el token de acceso y reintentar la solicitud
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.warn("Intentando refrescar el token y reintentar la solicitud");
+        response = await refreshTokenAndRetryRequest(`http://localhost:8080/api/proxy?uatId=${uatId}`, requestOptions);
+      }
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`Error al acceder a la UAT: ${errorBody}`);
+        throw new Error(`Error al acceder a la UAT: ${errorBody}`);
+      }
+
+      // * Si la respuesta es satisfactoria, obtiene la URL de la UAT
+      const uatUrl = await response.json();
+      console.log("UAT accedida correctamente, URL: ", uatUrl?.url);
+      return uatUrl?.url;
+    } catch (error) {
+      console.error("Error al solicitar la UAT a través del proxy: ", error.message);
+      throw error;
+    }
+  };
+
   // * Obtiene todos los UATs de la base de datos y los devuelve en un arreglo.
   const getAllUATs = async () => {
     console.log("Obteniendo todos los UATs");
@@ -292,7 +334,7 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  // * Actualiza los datos del usuario logado
+  // * Actualiza los datos del usuario logado en el cliente
   const updateUserData = useCallback(() => {
     fetchUserData((data) => {
       setUserData(data); // Actualiza el estado global del usuario
@@ -300,13 +342,14 @@ export const DataProvider = ({ children }) => {
     });
   }, [authState]);
 
+  // * Actualiza y compriueba los datos del usuario logado en el contexto
   useEffect(() => {
     if (authState.status === "authenticated") {
       updateUserData();
     }
   }, [authState.status, updateUserData]);
 
-  // * Actualiza los datos del usuario logado
+  // * Actualiza los datos del usuario logado en la base de datos
   const upgradeUserData = async (username, matricula, privilegio) => {
     console.log("Actualizando datos del usuario");
 
@@ -332,17 +375,16 @@ export const DataProvider = ({ children }) => {
         console.warn("Intentando refrescar el token y reintentar la solicitud");
         response = await refreshTokenAndRetryRequest("http://localhost:8080/api/profile", requestOptions);
         console.log("Respuesta del servidor al obtener las estadísticas: ", response);
+      }
+      if (!response.ok) {
+        const errorBody = await response.text();
 
-        if (!response.ok) {
-          const errorBody = await response.text();
-
-          if (response.status === 409) {
-            console.error("El nombre de usuario ya está en uso. Elige otro nombre de usuario");
-            throw new Error("El nombre de usuario ya está en uso. Elige otro nombre de usuario.");
-          }
-
-          throw new Error(`Error en el servidor, revisa el controlador: ${errorBody}`);
+        if (response.status === 409) {
+          console.error("El nombre de usuario ya está en uso. Elige otro nombre de usuario");
+          throw new Error("El nombre de usuario ya está en uso. Elige otro nombre de usuario.");
         }
+
+        throw new Error(`Error en el servidor, revisa el controlador: ${errorBody}`);
       }
 
       const data = await response.json();
@@ -380,17 +422,17 @@ export const DataProvider = ({ children }) => {
         console.warn("Intentando refrescar el token y reintentar la solicitud");
         response = await refreshTokenAndRetryRequest("http://localhost:8080/api/deleteUser", requestOptions);
         console.log("Respuesta del servidor al obtener las estadísticas: ", response);
+      }
 
-        if (!response.ok) {
-          const errorBody = await response.text();
+      if (!response.ok) {
+        const errorBody = await response.text();
 
-          if (response.status === 400) {
-            console.error("No puedes eliminarte a ti mismo");
-            throw new Error("No puedes eliminarte a ti mismo");
-          }
-
-          throw new Error(`Error al eliminar el usuario: ${errorBody}`);
+        if (response.status === 400) {
+          console.error("No puedes eliminarte a ti mismo");
+          throw new Error("No puedes eliminarte a ti mismo");
         }
+
+        throw new Error(`Error al eliminar el usuario: ${errorBody}`);
       }
 
       const data = await response.json();
@@ -407,6 +449,7 @@ export const DataProvider = ({ children }) => {
       value={{
         saveUAT,
         getAllUATs,
+        fetchUATProxy,
         getUATstadistics,
         removeUAT,
         getUserData,

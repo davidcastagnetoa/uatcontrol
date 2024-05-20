@@ -34,6 +34,3 @@ router.put("/profile", verifyUserToken, updateUserProfileController);
 router.delete("/deleteUser", verifyUserToken, deleteUser);
 
 export default router;
-
-// (*) <!-- HTML en tu aplicación cliente -->
-// <iframe src="/api/proxy" width="100%" height="600px"></iframe>

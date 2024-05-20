@@ -13,9 +13,6 @@ import { MsalProvider } from "@azure/msal-react";
 const MSClientId = process.env.REACT_APP_MICROSOFT_APP_CLIENT_ID;
 const MS_TENANT_ID = process.env.REACT_APP_MICROSOFT_APP_TENANT_ID;
 
-console.debug("clientID for MSalProvider is: " + MSClientId);
-console.debug("MS_TENANT_ID for MSalProvider is: " + MS_TENANT_ID);
-
 const msalConfig = {
   auth: {
     clientId: MSClientId,

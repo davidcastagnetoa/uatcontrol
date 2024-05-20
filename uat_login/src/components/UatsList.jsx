@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MoreHorizontal } from "lucide-react";
 
 // UI
@@ -41,6 +41,7 @@ const UatsList = () => {
   const [openDialogId, setOpenDialogId] = useState(null); // Abre cuado de dialogo al borrar UAT
   const [openDialogToEditId, setOpenDialogToEditId] = useState(null);
   const [userStatus, setUserStatus] = useState(userData.privilegio === "administrador" ? "Administrador" : "Usuario");
+  const navigate = useNavigate();
 
   // * Función para abrir el AlertDialog
   const openDialog = () => setIsDialogOpen(true);
@@ -108,10 +109,14 @@ const UatsList = () => {
     }
   };
 
-  // * Editar una UAT en el servidor
-  // ! EN DESARROLLO
+  // - Editar una UAT en el servidor - EN DESARROLLO
   const handleEditUAT = (id) => {
     console.warn("El id de la UAT seleccionada es :", id);
+  };
+
+  // - Navega hacia una UAT - EN DESARROLLO
+  const handleAccessUAT = (uatId) => {
+    navigate("/proxy", { state: { uatId } });
   };
 
   // * Actiualiza los datos del Contexto DataContext
@@ -171,7 +176,9 @@ const UatsList = () => {
                         <TableCell>
                           <div className="font-medium">{uat.script}</div>
                           <div className="hidden text-sm text-muted-foreground md:inline">
-                            <Link to={uat.link}>Click aquí para acceder</Link>
+                            <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                              Click aquí para acceder
+                            </Button>
                           </div>
                         </TableCell>
 
@@ -305,7 +312,9 @@ const UatsList = () => {
                           <TableCell>
                             <div className="font-medium">{uat.script}</div>
                             <div className="hidden text-sm text-muted-foreground md:inline">
-                              <Link to={uat.link}>Click aquí para acceder</Link>
+                              <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                                Click aquí para acceder
+                              </Button>
                             </div>
                           </TableCell>
 
@@ -317,7 +326,7 @@ const UatsList = () => {
                                 uat.status === "En revisión"
                                   ? "outline"
                                   : uat.status === "En producción"
-                                  ? "secondary"
+                                  ? "constructive"
                                   : "destructive"
                               }
                             >
@@ -440,7 +449,9 @@ const UatsList = () => {
                           <TableCell>
                             <div className="font-medium">{uat.script}</div>
                             <div className="hidden text-sm text-muted-foreground md:inline">
-                              <Link to={uat.link}>Click aquí para acceder</Link>
+                              <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                                Click aquí para acceder
+                              </Button>
                             </div>
                           </TableCell>
 
@@ -575,7 +586,9 @@ const UatsList = () => {
                           <TableCell>
                             <div className="font-medium">{uat.script}</div>
                             <div className="hidden text-sm text-muted-foreground md:inline">
-                              <Link to={uat.link}>Click aquí para acceder</Link>
+                              <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                                Click aquí para acceder
+                              </Button>
                             </div>
                           </TableCell>
 

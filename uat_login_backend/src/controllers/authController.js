@@ -55,18 +55,18 @@ export const login = async (req, res) => {
     console.log("\n Token de acceso generado en Login nativo es:", token);
     console.log("\n Token de refresco generado en Login nativo es:", refreshToken);
 
-    res.cookie("accessToken", token, {
-      httpOnly: true,
-      secure: false, //! Solo activa 'secure' en producción
-      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
-      sameSite: "Strict",
-    });
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false, //! Solo activa 'secure' en producción
-      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
-      sameSite: "Strict",
-    });
+    // res.cookie("accessToken", token, {
+    //   httpOnly: true,
+    //   secure: false, //! Solo activa 'secure' en producción
+    //   // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+    //   sameSite: "Strict",
+    // });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: false, //! Solo activa 'secure' en producción
+    //   // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+    //   sameSite: "Strict",
+    // });
 
     res.json({ token, refreshToken, userData: user });
   } catch (error) {
@@ -210,18 +210,18 @@ export const loginWithGoogle = async (req, res) => {
     const accessToken = generateAccessToken(googlePayload);
     const refreshToken = generateRefreshToken(googlePayload);
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: false, //! Solo activa 'secure' en producción
-      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
-      sameSite: "Strict",
-    });
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false, //! Solo activa 'secure' en producción
-      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
-      sameSite: "Strict",
-    });
+    // res.cookie("accessToken", accessToken, {
+    //   httpOnly: true,
+    //   secure: false, //! Solo activa 'secure' en producción
+    //   // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+    //   sameSite: "Strict",
+    // });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: false, //! Solo activa 'secure' en producción
+    //   // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+    //   sameSite: "Strict",
+    // });
 
     console.log("\n Token de acceso generado en Login de Google es:", accessToken);
     console.log("\n Token de refresco generado en Login de Google es:", refreshToken);
@@ -258,18 +258,18 @@ export const loginWithMicrosoft = async (req, res) => {
     const accessToken = generateAccessToken(microsoftPayload);
     const refreshToken = generateRefreshToken(microsoftPayload);
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: false, //! Solo activa 'secure' en producción
-      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
-      sameSite: "Strict",
-    });
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false, //! Solo activa 'secure' en producción
-      // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
-      sameSite: "Strict",
-    });
+    // res.cookie("accessToken", accessToken, {
+    //   httpOnly: true,
+    //   secure: false, //! Solo activa 'secure' en producción
+    //   // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+    //   sameSite: "Strict",
+    // });
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: false, //! Solo activa 'secure' en producción
+    //   // secure: process.env.NODE_ENV === "production", //! Solo activa 'secure' en producción
+    //   sameSite: "Strict",
+    // });
 
     console.log("\n Token de acceso generado en Login de Microsoft es:", accessToken);
     console.log("\n Token de refresco generado en Login de Microsoft es:", refreshToken);
@@ -305,7 +305,7 @@ export const refreshNativeToken = async (req, res) => {
       matricula: userData.matricula,
     });
 
-    // Opcional: Enviar el nuevo token de acceso en una cookie (considera seguridad como HttpOnly, Secure flags)
+    //! Opcional: Enviar el nuevo token de acceso en una cookie (considera seguridad como HttpOnly, Secure flags)
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: false, //! Solo activa 'secure' en producción

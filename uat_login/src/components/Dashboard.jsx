@@ -244,6 +244,11 @@ function Dashboard() {
     setUserStatus(userData?.privilegio === "administrador" ? "Administrador" : "Usuario");
   }, [userData]);
 
+  // - Navega hacia una UAT - EN DESARROLLO
+  const handleAccessUAT = (uatId) => {
+    navigate("/proxy", { state: { uatId } });
+  };
+
   //DEBUGGING
   // console.log("Valor de authState: " + JSON.stringify(authState));
   // console.log("authState.user: ", authState.user);
@@ -294,7 +299,7 @@ function Dashboard() {
                 </Card>
               ))
           ) : (
-            <div></div> // Fallback content if uatStats is empty
+            <div></div> // if uatStats is empty
           )}
 
           {/* ESTADISTICAS EN REVISION */}
@@ -318,7 +323,7 @@ function Dashboard() {
                 </Card>
               ))
           ) : (
-            <div></div> // Fallback content if uatStats is empty
+            <div></div> // if uatStats is empty
           )}
         </div>
 
@@ -367,7 +372,9 @@ function Dashboard() {
                           <TableCell>
                             <div className="font-medium">{uat.script}</div>
                             <div className="hidden text-sm text-muted-foreground md:inline">
-                              <Link to={uat.link}>Click aquí para acceder</Link>
+                              <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                                Click aquí para acceder
+                              </Button>
                             </div>
                           </TableCell>
 
@@ -501,7 +508,9 @@ function Dashboard() {
                             <TableCell>
                               <div className="font-medium">{uat.script}</div>
                               <div className="hidden text-sm text-muted-foreground md:inline">
-                                <Link to={uat.link}>Click aquí para acceder</Link>
+                                <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                                  Click aquí para acceder
+                                </Button>
                               </div>
                             </TableCell>
 
@@ -638,7 +647,9 @@ function Dashboard() {
                             <TableCell>
                               <div className="font-medium">{uat.script}</div>
                               <div className="hidden text-sm text-muted-foreground md:inline">
-                                <Link to={uat.link}>Click aquí para acceder</Link>
+                                <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                                  Click aquí para acceder
+                                </Button>
                               </div>
                             </TableCell>
 
@@ -775,7 +786,9 @@ function Dashboard() {
                             <TableCell>
                               <div className="font-medium">{uat.script}</div>
                               <div className="hidden text-sm text-muted-foreground md:inline">
-                                <Link to={uat.link}>Click aquí para acceder</Link>
+                                <Button variant="link" onClick={() => handleAccessUAT(uat.id)}>
+                                  Click aquí para acceder
+                                </Button>
                               </div>
                             </TableCell>
 

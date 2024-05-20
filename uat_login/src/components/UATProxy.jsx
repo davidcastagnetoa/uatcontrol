@@ -1,34 +1,45 @@
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useContext, useState } from "react";
+import { DataContext } from "../context/DataContext";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const UATProxy = () => {
+  const { fetchUATProxy } = useContext(DataContext);
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchProxy = async () => {
-      try {
-        // Suponiendo que necesitas pasar algún identificador de UAT, aquí se podría agregar
-        const response = await fetch("/api/proxy?uatId=123", {
-          method: "GET",
-          headers: {
-            // Tus headers necesarios, como tokens de autenticación si es necesario
-          },
-        });
+  const location = useLocation();
+  const { uatId } = location.state || {}; // Asegúrate de que location.state no sea undefined
+  const [uatUrl, setUatUrl] = useState(null);
 
-        // Si el servidor responde redireccionando, puedes manejarlo aquí, pero generalmente
-        // el servidor se encargará de la redirección directamente si es configurado para hacerlo.
-        if (!response.ok) {
-          throw new Error("Failed to fetch UAT");
-        }
+  console.warn("UAT URL:", uatUrl);
+
+  useEffect(() => {
+    if (!uatId) {
+      console.error("No UAT ID provided");
+      navigate("/error"); // Redirige si no se proporciona un ID
+      return;
+    }
+
+    const proxyUAT = async () => {
+      try {
+        const uatLink = await fetchUATProxy(uatId);
+        setUatUrl(uatLink);
       } catch (error) {
         console.error("Error accessing UAT:", error);
-        navigate("/error"); // Redirige a una ruta de error si algo falla
+        navigate("/error"); //! Redirige a una ruta 404 si algo falla
       }
     };
 
-    fetchProxy();
-  }, [navigate]);
+    proxyUAT();
+  }, [uatId, navigate, fetchUATProxy]);
 
-  return <div>Loading UAT...</div>;
+  return (
+    <>
+      {uatUrl ? (
+        <iframe src={uatUrl} style={{ width: "100%", height: "100vh", border: "none" }} title="UAT Frame"></iframe>
+      ) : (
+        <div>Renderizando UAT...</div>
+      )}
+    </>
+  );
 };
 
 export default UATProxy;

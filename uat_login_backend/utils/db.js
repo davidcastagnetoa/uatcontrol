@@ -3,13 +3,13 @@ import path from "path";
 import fs from "fs";
 import sqlite3 from "sqlite3";
 
-// Obtiene la ruta del directorio actual basado en import.meta.url
+// - Obtiene la ruta del directorio actual basado en import.meta.url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Establecer la ruta al archivo de la base de datos
 const databasePath = path.resolve(__dirname, "../data.sqlite3");
 
-// Asegura de que el directorio donde se almacenará la base de datos existe
+// - Verifica que el directorio donde se almacenará la base de datos existe
 if (!fs.existsSync(databasePath)) {
   const directory = path.dirname(databasePath);
   if (!fs.existsSync(directory)) {

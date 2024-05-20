@@ -42,7 +42,7 @@ const AuthProvider = ({ children }) => {
 
       if (data.token && data.refreshToken) {
         // - Como el servidor (login de authController.js) responde con un objeto que contiene el token,  si las credenciales
-        // - son correctas, se almacena dicho token en el localStore. Es necesario almacenar dicho token en el localStore,
+        // - son correctas, se almacena dicho token en el localStore. Es necesario almacenar dicho token en el localStore, (en cookies en proximas versiones)
         // - ya que el contexto AuthContext comprueba dicho token (authState.status) para verificar si el usuario está
         // - authenticado o no. Ya que las rutas protegidas solo se acceden si el Contenido de authState.status es  "authenticated"
 
@@ -127,7 +127,7 @@ const AuthProvider = ({ children }) => {
 
   // * Implementar lógica para verificar autenticación aquí (e.g., verificar token local)
   const verifyToken = async () => {
-    console.log("Verificando token...");
+    console.debug("Verificando token...");
     try {
       const token = localStorage.getItem("token");
       const refreshToken = localStorage.getItem("refreshToken");
@@ -194,7 +194,7 @@ const AuthProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.log("Error al verificar los tokens: " + error);
+      console.error("Error al verificar los tokens: " + error);
       setAuthState({ status: "anonymous", token: null, refreshToken: null });
       return false;
     }
@@ -214,7 +214,7 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   // * Pasar el estado de autenticación y las acciones a los consumidores
-  console.log("Contenido de authState: " + JSON.stringify(authState));
+  console.debug("Contenido de authState: " + JSON.stringify(authState));
   return (
     <AuthContext.Provider value={{ authState, setAuthState, login, signup, verifyToken, logout }}>
       {children}
