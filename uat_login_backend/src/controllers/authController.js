@@ -116,6 +116,7 @@ export const verifyTokenController = async (req, res) => {
         }
       } catch (error) {
         if (isRefreshToken) {
+          console.log("..::: Fallo al verificar Token en controlador: ", error.toString());
           console.log("Verification with refresh token failed");
           throw new Error("Refresh token verification failed");
         }
@@ -140,7 +141,7 @@ export const verifyTokenController = async (req, res) => {
 
       res.json(userInfo);
     } else {
-      console.error("Access token verification failed");
+      console.log("Access token verification failed");
       return res.status(403).json({ message: "Token verification failed" });
     }
   } catch (error) {
@@ -184,7 +185,7 @@ export const signup = async (req, res) => {
       refreshToken: refreshToken,
     });
   } catch (error) {
-    console.error("Error en el controlador signup:", error.message);
+    console.log("Error en el controlador signup:", error.message);
     res.status(500).json({ message: error.message });
   }
 };
@@ -232,7 +233,7 @@ export const loginWithGoogle = async (req, res) => {
       userInfo: googlePayload,
     });
   } catch (err) {
-    console.error("Error en loginWithGoogle:", err);
+    console.log("Error en loginWithGoogle:", err);
     res.status(err.status || 500).send(err.message || "Internal Server Error");
   }
 };
@@ -250,7 +251,7 @@ export const loginWithMicrosoft = async (req, res) => {
     const microsoftPayload = {
       username: userData.username,
       email: userData.email,
-      picture: userData.picture,
+      // picture: userData.picture, //! No se codifica la imagen de perfil en el TOKEN, dado que el enlace es muy largo para JWT
       matricula: userData.matricula,
       rol: userData.usergroup,
     };
@@ -271,8 +272,8 @@ export const loginWithMicrosoft = async (req, res) => {
     //   sameSite: "Strict",
     // });
 
-    console.log("\n Token de acceso generado en Login de Microsoft es:", accessToken);
-    console.log("\n Token de refresco generado en Login de Microsoft es:", refreshToken);
+    // console.log("\n Token de acceso generado en Login de Microsoft es:", accessToken);
+    // console.log("\n Token de refresco generado en Login de Microsoft es:", refreshToken);
 
     res.status(200).json({
       accessToken,
@@ -280,7 +281,7 @@ export const loginWithMicrosoft = async (req, res) => {
       user: microsoftPayload,
     });
   } catch (err) {
-    console.error("Error en loginWithMicrosoft:", err);
+    console.log("Error en loginWithMicrosoft:", err);
     res.status(err.status || 500).send(err.message || "Internal Server Error");
   }
 };
@@ -316,7 +317,7 @@ export const refreshNativeToken = async (req, res) => {
     // Devolver la respuesta con el nuevo token de acceso
     res.json({ accessToken });
   } catch (error) {
-    console.error("Failed to refresh token: ", error);
+    console.log("Failed to refresh token: ", error);
     res.status(403).json({ message: "Invalid refresh token" });
   }
 };

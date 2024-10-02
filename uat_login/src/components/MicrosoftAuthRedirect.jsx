@@ -14,7 +14,7 @@ export const MicrosoftAuthRedirect = () => {
       const account = accounts[0];
       instance
         .acquireTokenSilent({
-          scopes: ["user.read", "email", "profile", "openid "],
+          scopes: ["User.Read", "email", "profile", "openid "],
           account: account,
         })
         .then((response) => {
@@ -56,7 +56,9 @@ export const MicrosoftAuthRedirect = () => {
                 console.log("Redirigiendo a dashboard");
                 navigate("/dashboard", { replace: true });
               } else {
-                throw new Error("No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider .");
+                throw new Error(
+                  "No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider en MicrosoftAuthRedirect.jsx."
+                );
               }
             });
         });

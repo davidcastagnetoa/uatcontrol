@@ -92,7 +92,7 @@ const getUserById = (userId) => {
       if (err) {
         console.debug("Error al recuperar el usuario:", err.message);
         const error = new Error("Error al recuperar el usuario");
-        console.error(error);
+        console.log(error);
         reject(error);
       } else if (row) {
         resolve(row);
@@ -109,7 +109,7 @@ const getUserById = (userId) => {
  * */
 const searchUserByEmail = (email) => {
   return new Promise((resolve, reject) => {
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, row) => {
+    db.get(`SELECT * FROM users WHERE LOWER(email) = LOWER(?)`, [email], (err, row) => {
       if (err) {
         console.debug("Error al buscar el usuario por email:", err.message);
         const error = new Error("Error al buscar el usuario por email");
@@ -178,7 +178,7 @@ const insertOrUpdateGoogleUser = async (
     }
     return user;
   } catch (error) {
-    console.error("Error en insertOrUpdateGoogleUser:", error.message);
+    console.log("Error en insertOrUpdateGoogleUser:", error.message);
     throw error;
   }
 };
@@ -186,7 +186,7 @@ const insertOrUpdateGoogleUser = async (
 /**
 // * Inserta o actualiza un usuario en la base de datos. Si el usuario no existe, se crea.
 // * Si ya existe, se actualizan sus datos. Actualmente en uso para los usuarios de Microsoft
- * */
+*/
 const insertOrUpdateMicrosoftUser = async (
   userName,
   userEmail,
@@ -197,12 +197,14 @@ const insertOrUpdateMicrosoftUser = async (
 ) => {
   try {
     let user = await searchUserByEmail(userEmail);
+    console.log("Buscando usuario con email:", userEmail);
+    console.log("Resultado de búsqueda:", user?.id);
 
     if (!user) {
       return new Promise((resolve, reject) => {
         db.run(
           `INSERT INTO users (username, email, picture, matricula, usergroup) VALUES (?, ?, ?, ?, ?)`,
-          [userName, userEmail, userPicture, userMatricula, userRoll],
+          [userName, userEmail.toLowerCase(), userPicture, userMatricula, userRoll],
           function (err) {
             if (err) {
               reject(new Error("Error al insertar el usuario: " + err.message));
@@ -235,7 +237,7 @@ const insertOrUpdateMicrosoftUser = async (
       return user;
     }
   } catch (error) {
-    console.error("Error en insertOrUpdateMicrosoftUser:", error.message);
+    console.log("Error en insertOrUpdateMicrosoftUser:", error.message);
     throw error;
   }
 };
@@ -248,7 +250,7 @@ const isUsernameUnique = (username, userId) => {
   return new Promise((resolve, reject) => {
     db.get(`SELECT id FROM users WHERE username = ? AND id != ?`, [username, userId], (err, row) => {
       if (err) {
-        console.error("Error al verificar el username:", err.message);
+        console.log("Error al verificar el username:", err.message);
         reject(err);
       } else {
         resolve(!row); // - Devuelve true si no hay conflicto, es decir, el username es único
@@ -279,7 +281,7 @@ const updateUserProfile = async (email, { username, matricula, privilegio }) => 
         [username, matricula, privilegio, email],
         function (err) {
           if (err) {
-            console.error("Error al actualizar el perfil del usuario:", err.message);
+            console.log("Error al actualizar el perfil del usuario:", err.message);
             reject(err);
           } else if (this.changes === 0) {
             resolve(null);

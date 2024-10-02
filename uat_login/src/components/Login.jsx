@@ -71,7 +71,9 @@ function Login() {
         console.log("Redirigiendo a dashboard");
         navigate("/dashboard", { replace: true });
       } else {
-        throw new Error("No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider .");
+        throw new Error(
+          "No se ha verificado el token en la funcion verifyToken() del contexto AuthProvider en Login.jsx."
+        );
       }
     } catch (error) {
       console.error("Error during server authentication:", error);

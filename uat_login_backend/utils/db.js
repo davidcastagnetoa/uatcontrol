@@ -20,7 +20,7 @@ if (!fs.existsSync(databasePath)) {
 // * Abrir la base de datos, lo que creará el archivo si no existe
 const db = new sqlite3.Database(databasePath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
   if (err) {
-    console.error("Error al abrir la base de datos", err.message);
+    console.log("Error al abrir la base de datos", err.message);
   } else {
     console.log("Conectado a la base de datos SQLite.");
     // Aquí podrías llamar a una función para inicializar las tablas si es necesario
@@ -62,7 +62,7 @@ const initializeDatabase = () => {
   )`,
     (err) => {
       if (err) {
-        console.error("Error al crear las tablas:", err.message);
+        console.log("Error al crear las tablas:", err.message);
       } else {
         console.debug("Tablas creadas o ya existentes correctamente.");
       }
@@ -74,7 +74,7 @@ const initializeDatabase = () => {
 const closeDatabase = () => {
   db.close((err) => {
     if (err) {
-      console.error("Error al cerrar la base de datos", err.message);
+      console.log("Error al cerrar la base de datos", err.message);
     } else {
       console.log("Conexión a la base de datos cerrada.");
     }

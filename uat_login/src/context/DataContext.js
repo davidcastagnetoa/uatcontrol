@@ -315,7 +315,7 @@ export const DataProvider = ({ children }) => {
       }
 
       const userData = await response.json();
-      console.log("Datos de Usuario: ", userData);
+      console.log("::: Datos de Usuario obtenidos del servidor: ", userData);
 
       // Handle data with callback
       handleData(userData);
@@ -330,14 +330,14 @@ export const DataProvider = ({ children }) => {
   // * Obtiene los datos de perfil del usuario logado
   const getUserData = async () => {
     return fetchUserData((userData) => {
-      console.log("Datos de Usuario obtenidos: ", userData);
+      console.log("Datos de Usuario obtenidos en getUserData, contexto DataContext.js: ", userData);
     });
   };
 
   // * Actualiza los datos del usuario logado en el cliente
   const updateUserData = useCallback(() => {
     fetchUserData((data) => {
-      setUserData(data); // Actualiza el estado global del usuario
+      setUserData(data); //! Actualiza el estado global del usuario
       console.log("Datos de Usuario obtenidos y actualizados: ", data);
     });
   }, [authState]);

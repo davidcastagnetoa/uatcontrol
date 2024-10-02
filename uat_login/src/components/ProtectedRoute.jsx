@@ -8,7 +8,7 @@ function ProtectedRoute({ children, redirectTo = "/login" }) {
   const { authState } = useContext(AuthContext); // Aquí se deconstruye `authState` del valor del contexto.
   console.warn("Valores de authState:", authState);
 
-  // ! Ahora solo necesitas verificar si authState no está definido.
+  // ! Se necesita verificar si authState no está definido.
   if (!authState) {
     console.log("authState es undefined");
     return <div>Loading...</div>;

@@ -3,6 +3,27 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET, JWT_REFRESH_SECRET } from "../config.js";
+import { ConfidentialClientApplication } from "@azure/msal-node";
+import { LogLevel } from "@azure/msal-node";
+
+const MSClientId = process.env.MICROSOFT_APP_CLIENT_ID;
+const MS_TENANT_ID = process.env.MICROSOFT_APP_TENANT_ID;
+const MSClientSecret = process.env.MICROSOFT_APP_CLIENT_SECRET;
+const redirectUri = "http://localhost:3000/redirect/microsoft";
+
+if (!MSClientId || !MSClientSecret) {
+  throw new Error("MSClientId o MSClientSecret no están definidos en las variables de entorno.");
+}
+
+const authorityUrl = `https://login.microsoftonline.com/${MS_TENANT_ID}`;
+
+console.log("\n");
+console.log("MSClientId: ", MSClientId);
+console.log("MS_TENANT_ID: ", MS_TENANT_ID);
+console.log("MSClientSecret: ", MSClientSecret);
+console.log("Authority URL:", authorityUrl);
+console.log("Redirect URI:", redirectUri);
+console.log("\n");
 
 // * Compara una contraseña proporcionada por el usuario con una contraseña,
 // * hasheada almacenada, para validar el acceso del usuario.
@@ -58,7 +79,7 @@ const getGoogleUser = async (code) => {
   const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "postmessage");
   try {
     if (!oAuth2Client) {
-      console.error("OAuth2Client not defined");
+      console.log("OAuth2Client not defined");
       throw new Error("OAuth2Client not defined");
     }
 
@@ -82,31 +103,65 @@ const getGoogleUser = async (code) => {
     };
     return userGoogleData;
   } catch (error) {
-    console.error("Error al intercambiar el código por tokens: ", err);
+    console.log("Error al intercambiar el código por tokens: ", err);
     res.status(401).send("Unauthorized");
   }
 };
 
 // * Esta función utiliza el código de autorización para autenticar y recuperar información básica del usuario de
 // * Microsoft, Retorna esos datos para su uso en procesos de autenticación y registro.
-const getMicrosoftUser = async (authCode) => {
-  const client = Client.init({
-    authProvider: (done) => {
-      done(null, authCode); // - Autenticar con el código proporcionado
-    },
-  });
-
+const getMicrosoftUser = async (accessToken) => {
   try {
+    const client = Client.init({
+      authProvider: (done) => {
+        done(null, accessToken);
+      },
+    });
+
     const payload = await client.api("/me").get();
     console.debug(`\nInformación del usuario de Microsoft: ${JSON.stringify(payload)}`);
-    return {
+
+    var userPicture = "/default_avatar_route.png";
+
+    try {
+      // Get the user's profile photo
+      const photoResponse = await client.api("/me/photo/$value").get();
+      // console.debug("photoResponse: ", photoResponse);
+
+      // Check if the response is a fetch Response object
+      if (photoResponse && typeof photoResponse.arrayBuffer === "function") {
+        // Read the response as an ArrayBuffer
+        const arrayBuffer = await photoResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64Image = buffer.toString("base64");
+        const mimeType = "image/jpeg";
+
+        // Set the user picture as a Data URL
+        userPicture = `data:${mimeType};base64,${base64Image}`;
+        console.debug("Imagen de usuario de Microsoft obtenida correctamente");
+      } else {
+        console.log("Unexpected response type when fetching user photo.");
+        throw new Error("Unexpected response type when fetching user photo.");
+      }
+    } catch (photoError) {
+      if (photoError.code === "ErrorItemNotFound" || photoError.statusCode === 404) {
+        console.log("El usuario no tiene una foto de perfil.");
+        // Keep the default userPicture
+      } else {
+        console.log("Error al obtener la foto del usuario: ", photoError.toString());
+        throw photoError;
+      }
+    }
+
+    const userMicrosoftData = {
       userName: payload.displayName,
       userEmail: payload.mail || payload.userPrincipalName,
-      userPicture: "/default_avatar_route.png", // Asumiendo una imagen predeterminada
+      userPicture: userPicture,
       id: payload.id,
     };
+    return userMicrosoftData;
   } catch (error) {
-    console.error("Error al obtener el usuario de Microsoft: ", error);
+    console.log("Error al obtener el usuario de Microsoft: ", error.toString());
     throw new Error("Error en la autenticación con Microsoft");
   }
 };

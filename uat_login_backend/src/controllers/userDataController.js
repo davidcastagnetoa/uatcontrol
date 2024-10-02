@@ -56,7 +56,7 @@ export const deleteUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error al eliminar al usuario:", error.message);
+    console.log("Error al eliminar al usuario:", error.message);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
@@ -83,7 +83,7 @@ export const getAllUserUATs = async (req, res) => {
     console.debug(uatRows.length > 0 ? `${uatRows.length} UATs encontradas` : "UATs no encontradas");
     res.json(payload);
   } catch (err) {
-    console.error("Error al obtener las UATs del usuario:", err);
+    console.log("Error al obtener las UATs del usuario:", err);
     res.status(500).send("Internal Server Error");
   }
 };
@@ -96,7 +96,7 @@ export const getUserProfile = async (req, res) => {
   try {
     const userData = await searchUserByEmail(userEmail);
     if (!userData) {
-      console.error("Usuario no encontrado para el email:", userEmail);
+      console.log("Usuario no encontrado para el email:", userEmail);
       return res.status(404).send("Usuario no encontrado");
     }
 
@@ -111,7 +111,7 @@ export const getUserProfile = async (req, res) => {
     // console.log("Datos de usuario cargados correctamente");
     res.json(payload);
   } catch (err) {
-    console.error("Error al obtener los datos del usuario:", err.message);
+    console.log("Error al obtener los datos del usuario:", err.message);
     switch (err.message) {
       case "Usuario no encontrado":
         return res.status(404).send("Usuario no encontrado");
@@ -179,7 +179,7 @@ export const proxyUAT = async (req, res) => {
         var gatheredCookies = req.cookies;
         console.log("Cookies obtenidas:", gatheredCookies);
       } catch (err) {
-        console.error("Error en la autenticación:", err);
+        console.log("Error en la autenticación:", err);
         res.status(500).send("Error en la autenticación");
       }
 
@@ -199,7 +199,7 @@ export const proxyUAT = async (req, res) => {
           res.json({ url: link });
         })
         .catch((err) => {
-          console.error("Error al obtener la UAT:", err);
+          console.log("Error al obtener la UAT:", err);
           res.status(500).send("Internal Server Error");
         });
 
@@ -208,7 +208,7 @@ export const proxyUAT = async (req, res) => {
       // * Si no es administrador, verifica si tiene acceso a la UAT
       const uatUrl = await getUATUrlByEmailAndId(userEmail, uatId);
       if (!uatUrl) {
-        console.error(`Error, el usuario ${userEmail} no tiene acceso a esta UAT`);
+        console.log(`Error, el usuario ${userEmail} no tiene acceso a esta UAT`);
         return res.status(403).send("No tienes acceso a esta UAT");
       }
       //! Redireccionar al cliente a la URL obtenida
@@ -230,14 +230,14 @@ export const proxyUAT = async (req, res) => {
           res.json({ url: link });
         })
         .catch((err) => {
-          console.error("Error al obtener la UAT:", err);
+          console.log("Error al obtener la UAT:", err);
           res.status(500).send("Internal Server Error");
         });
 
       // res.redirect(uatUrl);
     }
   } catch (err) {
-    console.error("Error al redireccionar a la UAT:", err);
+    console.log("Error al redireccionar a la UAT:", err);
     res.status(500).send("Internal Server Error");
   }
 };
@@ -270,7 +270,7 @@ export const removeUserUAT = async (req, res) => {
     console.debug("UAT eliminada correctamente.", result);
     return res.status(200).send("UAT eliminada correctamente");
   } catch (err) {
-    console.error("Error al eliminar la UAT:", err.message);
+    console.log("Error al eliminar la UAT:", err.message);
     return res.status(500).send("Error al eliminar la UAT");
   }
 };
@@ -288,7 +288,7 @@ export const saveUserUAT = async (req, res) => {
     const user = await searchUserByEmail(userEmail);
 
     if (!user) {
-      console.error("Usuario no encontrado");
+      console.log("Usuario no encontrado");
       return res.status(404).send("Usuario no encontrado");
     }
 
@@ -297,7 +297,7 @@ export const saveUserUAT = async (req, res) => {
     console.debug("UAT guardada con ID:", UATinserted);
     return res.status(200).send("UAT guardada correctamente");
   } catch (err) {
-    console.error("Error en el controlador saveUserUAT:", err.message);
+    console.log("Error en el controlador saveUserUAT:", err.message);
     return res.status(500).send("Error interno del servidor");
   }
 };
@@ -335,11 +335,11 @@ export const updateUserProfileController = async (req, res) => {
     });
   } catch (error) {
     if (error.message.includes("El nombre de usuario ya está en uso")) {
-      console.error("El nombre de usuario ya está en uso:", error.message);
+      console.log("El nombre de usuario ya está en uso:", error.message);
       return res.status(409).json({ message: "El nombre de usuario ya está en uso" });
     }
 
-    console.error("Error al actualizar el perfil del usuario:", error.message);
+    console.log("Error al actualizar el perfil del usuario:", error.message);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };

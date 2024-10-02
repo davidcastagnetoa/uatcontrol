@@ -136,8 +136,8 @@ const AuthProvider = ({ children }) => {
         throw new Error("No token found");
       }
 
-      console.log("Token encontrado...", token);
-      console.log("Llamando a endpoint http://localhost:8080/api/verifyToken");
+      console.log("Token encontrado: ", token);
+      console.log("Llamando a endpoint http://localhost:8080/api/verifyToken ...");
       console.log("Controlador verifyTokenController");
 
       // - Función auxiliar para intentar verificar un token dado
@@ -152,7 +152,10 @@ const AuthProvider = ({ children }) => {
           },
         });
 
-        console.warn("Respuesta recibida: ", response);
+        console.warn(
+          "Respuesta recibida al verificar el token en el servidor, funcion verifyTokenController(): ",
+          response
+        );
         if (!response.ok) {
           throw new Error("Error en la verificación del token");
         }
@@ -183,7 +186,7 @@ const AuthProvider = ({ children }) => {
       try {
         return await tryVerifyToken(token);
       } catch (error) {
-        console.log("Error con el token de acceso, intentando con el token de refresco: " + error);
+        console.error("Error con el token de acceso, intentando con el token de refresco: " + error);
 
         // * Intenta con el token de refresco si el token de acceso falla
         if (refreshToken) {
@@ -194,7 +197,7 @@ const AuthProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error("Error al verificar los tokens: " + error);
+      console.error("Error al verificar los tokens: " + error.toString());
       setAuthState({ status: "anonymous", token: null, refreshToken: null });
       return false;
     }

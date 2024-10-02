@@ -11,10 +11,10 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 // Control de credenciales y errores para debug
 if (!GOOGLE_CLIENT_ID) {
-  console.error("Google client ID environment variable not set. Please add GOOGLE_CLIENT_ID to .env file.");
+  console.log("Google client ID environment variable not set. Please add GOOGLE_CLIENT_ID to .env file.");
 }
 if (!GOOGLE_CLIENT_SECRET) {
-  console.error("Google Secret environment variable not set. Please add GOOGLE_CLIENT_SECRET to .env file.");
+  console.log("Google Secret environment variable not set. Please add GOOGLE_CLIENT_SECRET to .env file.");
 }
 
 export { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET, JWT_REFRESH_SECRET };

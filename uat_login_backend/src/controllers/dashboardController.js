@@ -15,7 +15,7 @@ export const getUATsStatistics = async (req, res) => {
     const result = await getUserUATsStatusCountsByEmail(userEmail);
     res.json(result);
   } catch (error) {
-    console.error("Error al obtener estadísticas de UATs:", error);
+    console.log("Error al obtener estadísticas de UATs:", error);
     res.status(500).send("Error interno del servidor");
   }
 };
@@ -33,7 +33,7 @@ export const getAllUsers = async (req, res) => {
 
     res.json(responseData);
   } catch (error) {
-    console.error("Error al obtener todos los usuarios:", error.message);
+    console.log("Error al obtener todos los usuarios:", error.message);
 
     if (error.message.includes("Acceso denegado")) {
       res.status(403).send(error.message);

@@ -19,13 +19,13 @@ export const verifyUserToken = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.error("MIDDLEWARE, Error al validar el token de acceso");
+    console.log("MIDDLEWARE, Error al validar el token de acceso");
     // Verificar si el token de acceso ha expirado y si hay un token de refresco disponible
 
     //! Extrae el token de refresco de las cookies. EN DESARROLLO
     const refreshTokenFromCookies = req.cookies.refreshToken;
     if (!refreshTokenFromCookies) {
-      console.error("MIDDLEWARE, No refresh token provided From cookies");
+      console.log("MIDDLEWARE, No refresh token provided From cookies");
       // return res.sendStatus(403);
     } else {
       console.log("MIDDLEWARE, Refresh token provided From cookies");
@@ -48,11 +48,11 @@ export const verifyUserToken = async (req, res, next) => {
         req.user = decodedRefresh;
         next();
       } catch (refreshError) {
-        console.error("MIDDLEWARE, Error al validar el token de refresco: ", refreshError);
+        console.log("MIDDLEWARE, Error al validar el token de refresco: ", refreshError);
         return res.sendStatus(403);
       }
     } else {
-      console.error("MIDDLEWARE, Token de refresco no disponible");
+      console.log("MIDDLEWARE, Token de refresco no disponible");
       return res.sendStatus(403);
     }
   }

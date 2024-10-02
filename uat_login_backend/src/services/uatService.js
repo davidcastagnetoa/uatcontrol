@@ -11,7 +11,7 @@ const deleteUserUATById = (userId, script, link, osa) => {
         // Si la UAT existe, procede a eliminarla usando su id
         db.run(`DELETE FROM uat_collection WHERE id = ?`, [uat.id], function (err) {
           if (err) {
-            console.error("Error al eliminar la UAT:", err.message);
+            console.log("Error al eliminar la UAT:", err.message);
             reject(err);
           } else {
             console.log(`UAT con id ${uat.id} eliminada correctamente.`);
@@ -34,13 +34,13 @@ const getAllUserUATsByEmail = (email) => {
     // Primero, obtén el userId basado en el email
     db.get(`SELECT id FROM users WHERE email = ?`, [email], (err, user) => {
       if (err) {
-        console.error("Error al obtener el userId:", err.message);
+        console.log("Error al obtener el userId:", err.message);
         reject(err);
       } else if (user) {
         // Ahora, obtén todas las UAT para el userId encontrado
         db.all(`SELECT * FROM uat_collection WHERE user_id = ?`, [user.id], (err, rows) => {
           if (err) {
-            console.error("Error al obtener las UATs:", err.message);
+            console.log("Error al obtener las UATs:", err.message);
             reject(err);
           } else {
             // console.debug("UATs halladas: ", rows);
@@ -60,7 +60,7 @@ const getUATById = (uatId) => {
   return new Promise((resolve, reject) => {
     db.get(`SELECT * FROM uat_collection WHERE id = ?`, [uatId], (err, row) => {
       if (err) {
-        console.error("Error al buscar la UAT por ID:", err.message);
+        console.log("Error al buscar la UAT por ID:", err.message);
         reject(err);
       } else {
         resolve(row);
@@ -100,7 +100,7 @@ const getUserUATByParams = (userId, script, link, osa) => {
       [userId, script, link, osa],
       (err, row) => {
         if (err) {
-          console.error("Error al obtener la UAT:", err.message);
+          console.log("Error al obtener la UAT:", err.message);
           reject(err);
         } else if (row) {
           // UAT encontrada
@@ -142,7 +142,7 @@ const getUserUATsStatusCountsByEmail = async (email) => {
       data: stats,
     };
   } catch (error) {
-    console.error("Error al obtener las estadísticas de UATs por email:", error);
+    console.log("Error al obtener las estadísticas de UATs por email:", error);
     throw error; // Lanzar error para que el controlador lo maneje
   }
 };
@@ -155,7 +155,7 @@ const insertUatCollection = (userId, script, link, osa, status) => {
       [userId, script, link, osa, status],
       function (err) {
         if (err) {
-          console.error("Error al insertar el UAT:", err.message);
+          console.log("Error al insertar el UAT:", err.message);
           reject(err);
         } else {
           resolve(this.lastID);
@@ -206,7 +206,7 @@ const updateUatCollection = (userId, uatId, updates) => {
     // Primero, obtén la UAT usando los parámetros dados para obtener la id específica
     db.get(`SELECT * FROM uat_collection WHERE user_id = ? AND id = ?`, [userId, uatId], (err, row) => {
       if (err) {
-        console.error("Error al obtener la UAT:", err.message);
+        console.log("Error al obtener la UAT:", err.message);
         rej(err);
       } else if (row) {
         // Si la UAT existe, procede a actualizarla usando su id
@@ -215,7 +215,7 @@ const updateUatCollection = (userId, uatId, updates) => {
           [updates.script, updates.link, updates.osa, updates.status, uatId],
           function (err) {
             if (err) {
-              console.error("Error al actualizar la UAT:", err.message);
+              console.log("Error al actualizar la UAT:", err.message);
               rej(err);
             } else {
               console.log(`UAT con id ${uatId} actualizada correctamente.`);

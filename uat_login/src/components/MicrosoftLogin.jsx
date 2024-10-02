@@ -37,7 +37,7 @@ export const MicrosoftLogin = ({ isLoading }) => {
 
   const handleLogin = () => {
     const loginRequest = {
-      scopes: ["user.read", "email", "profile", "openid "],
+      scopes: ["User.Read", "email", "profile", "openid "],
       prompt: "consent",
     };
     instance.loginRedirect(loginRequest).catch(console.error);
