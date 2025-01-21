@@ -1,4 +1,10 @@
-import { removeUserTarget, searchUserByEmail, updateUserProfile } from "../services/userService.js";
+import {
+  removeUserTarget,
+  searchUserByEmail,
+  updateUserProfile,
+  saveUserPicture,
+  updateUserPicture,
+} from "../services/userService.js";
 import {
   insertUatCollection,
   getAllUserUATsByEmail,
@@ -335,11 +341,33 @@ export const updateUserProfileController = async (req, res) => {
     });
   } catch (error) {
     if (error.message.includes("El nombre de usuario ya está en uso")) {
-      console.log("El nombre de usuario ya está en uso:", error.message);
+      console.log("El nombre de usuario ya está en uso:", error.message.toString());
       return res.status(409).json({ message: "El nombre de usuario ya está en uso" });
     }
 
-    console.log("Error al actualizar el perfil del usuario:", error.message);
+    console.log("Error al actualizar el perfil del usuario:", error.message.toString());
     res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+// - Controlador para actualizar la imagen de perfil del usuario desde el cliente, No en uso, (EN DESARROLLO)
+export const updateProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id; // ID del usuario, que proviene del token de autenticación
+    const imageBuffer = req.file.buffer; // Buffer de la imagen recibida
+
+    // Llamada al servicio para guardar la imagen en el servidor
+    const picturePath = saveUserPicture(imageBuffer, userId);
+
+    // Actualizamos la base de datos con la nueva ruta de la imagen
+    const result = await updateUserPicture(userId, picturePath);
+
+    // Respondemos con éxito
+    console.log("Imagen de perfil actualizada correctamente");
+    res.status(200).json(result);
+  } catch (error) {
+    // Manejamos errores en caso de que ocurra algún problema
+    console.log("Error al guardar la imagen:", error.message.toString());
+    res.status(500).json({ message: error.message || "Error al guardar la imagen" });
   }
 };

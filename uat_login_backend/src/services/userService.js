@@ -1,5 +1,7 @@
 import { db } from "../../utils/db.js";
 import bcrypt from "bcrypt";
+import fs from "fs";
+import path from "path";
 
 /**
 // * Recupera los detalles completos de un usuario desde la base de datos utilizando
@@ -184,6 +186,24 @@ const insertOrUpdateGoogleUser = async (
 };
 
 /**
+// * Función para guardar la imagen del perfil del usuario en la carpeta del servidor.
+// ! Actualmente en desarrollo para usuarios de Microsoft
+*/
+const saveUserPicture = (buffer, userId) => {
+  const uploadsDir = path.join(process.cwd(), "uploads"); // Ruta de la carpeta de imágenes
+  const filePath = path.join(uploadsDir, `${userId}.jpg`); // Ruta completa del archivo (nombre de archivo basado en userId)
+
+  // Crea el directorio si no existe
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+
+  // Guarda el archivo en el sistema de archivos
+  fs.writeFileSync(filePath, buffer);
+  return filePath; // Retorna la ruta del archivo guardado
+};
+
+/**
 // * Inserta o actualiza un usuario en la base de datos. Si el usuario no existe, se crea.
 // * Si ya existe, se actualizan sus datos. Actualmente en uso para los usuarios de Microsoft
 */
@@ -211,6 +231,9 @@ const insertOrUpdateMicrosoftUser = async (
             } else {
               const userId = this.lastID;
 
+              // Guarda la imagen en la carpeta de imágenes del servidor
+              const picturePath = saveUserPicture(userPicture, userId);
+
               db.run(
                 `INSERT INTO auth_methods (user_id, auth_type, auth_details) VALUES (?, 'microsoft', ?)`,
                 [userId, id],
@@ -222,7 +245,7 @@ const insertOrUpdateMicrosoftUser = async (
                       id: userId,
                       username: userName,
                       email: userEmail,
-                      picture: userPicture,
+                      picture: userPicture, //- Se reemplaza en lugar de userPicture
                       matricula: userMatricula,
                       usergroup: userRoll,
                     });
@@ -341,6 +364,21 @@ const removeUserTarget = async (email) => {
   });
 };
 
+/**
+// - Actualiza la imagen de perfil del usuario en la base de datos, Esta accion 
+// - se realiza desde el lado del cliente. EN desarrollo, No en uso
+*/
+export const updateUserPicture = (userId, picturePath) => {
+  return new Promise((resolve, reject) => {
+    db.run(`UPDATE users SET picture = ? WHERE id = ?`, [picturePath, userId], (err) => {
+      if (err) {
+        return reject(new Error("Error al actualizar la imagen del perfil"));
+      }
+      resolve({ message: "Imagen de perfil actualizada con éxito", picturePath });
+    });
+  });
+};
+
 export {
   getUserByUsername,
   getUserById,
@@ -348,6 +386,7 @@ export {
   createUser,
   searchUserByEmail,
   insertOrUpdateGoogleUser,
+  saveUserPicture,
   insertOrUpdateMicrosoftUser,
   updateUserProfile,
   removeUserTarget,
