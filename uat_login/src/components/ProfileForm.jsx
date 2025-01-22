@@ -26,6 +26,7 @@ const ProfileForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { upgradeUserData, getUserData, userData } = useContext(DataContext);
+  const [userAvatar, setUserAvatar] = useState(localStorage.getItem("userAvatar") || "");
 
   const form = useForm({
     resolver: zodResolver(FormSchema),
@@ -86,10 +87,36 @@ const ProfileForm = () => {
     }
   };
 
+  // Función para obtener el avatar del usuario
+  const fetchUserAvatar = async () => {
+    try {
+      const UserDataFromDB = await getUserData();
+      const UserAvatar = UserDataFromDB.picture;
+      console.log("UserAvatar :", UserAvatar);
+      localStorage.setItem("userAvatar", UserAvatar); // Cachear la URL del avatar
+      return UserAvatar;
+    } catch (error) {
+      console.error("Error fetching user avatar:", error);
+      return undefined;
+    }
+  };
+
+  // Efecto para obtener el avatar del usuario
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      const avatar = await fetchUserAvatar();
+      // console.log("Avatar: ", avatar);
+      setUserAvatar(avatar);
+    };
+    if (!userAvatar) {
+      fetchAvatar();
+    }
+  }, [userAvatar]);
+
   return (
     <div className="flex-1 lg:max-w-2xl">
       <div className="space-y-6">
-        {userData?.picture && <img src={userData?.picture} alt="avatar" className="rounded-full" />}
+        <img src={userAvatar} alt="avatar" className="rounded-full" />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField

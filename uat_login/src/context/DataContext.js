@@ -346,22 +346,14 @@ export const DataProvider = ({ children }) => {
   };
 
   // * Actualiza los datos del usuario logado en el cliente
-  // const updateUserData = useCallback(() => {
-  //   fetchUserData((data) => {
-  //     setUserData(data); //! Actualiza el estado global del usuario
-  //     console.log("Datos de Usuario obtenidos y actualizados: ", data);
-  //   });
-  // }, [authState]);
-
-  // * Actualiza los datos del usuario logado en el cliente
   const updateUserData = useCallback(() => {
     fetchUserData((data) => {
-      setUserData(data); // Actualiza el estado global del usuario
+      setUserData(data); //! Actualiza el estado global del usuario
       console.log("Datos de Usuario obtenidos y actualizados: ", userData);
     });
   }, [authState.token, authState.refreshToken]); // Dependencias actualizadas para reflejar cuando realmente se necesita actualizar
 
-  // * Actualiza y compriueba los datos del usuario logado en el contexto
+  // * Actualiza y comprueba los datos del usuario logado en el contexto
   useEffect(() => {
     if (authState.status === "authenticated") {
       updateUserData();

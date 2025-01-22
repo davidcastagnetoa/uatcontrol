@@ -17,8 +17,9 @@ import { DataContext } from "../context/DataContext";
 
 export function UserNav() {
   const navigate = useNavigate();
-  const { authState, logout } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const { getUserData, userData } = useContext(DataContext);
+  const [userAvatar, setUserAvatar] = useState(localStorage.getItem("userAvatar") || "");
 
   // * Importa los datos del usuario desde el servidor
   const handleGetUserData = useCallback(async () => {
@@ -35,13 +36,35 @@ export function UserNav() {
     handleGetUserData();
   }, [handleGetUserData]);
 
-  // console.log("Valor de authState: " + JSON.stringify(authState));
-  // console.log("authState.user: ", authState.user);
-  // console.warn("userData from DataContext: ", userData);
+  // Función para obtener el avatar del usuario
+  const fetchUserAvatar = async () => {
+    try {
+      const UserDataFromDB = await getUserData();
+      const UserAvatar = UserDataFromDB.picture;
+      console.log("UserAvatar :", UserAvatar);
+      localStorage.setItem("userAvatar", UserAvatar); // Cachear la URL del avatar
+      return UserAvatar;
+    } catch (error) {
+      console.error("UserAvatar: Error fetching user avatar:", error);
+      return undefined;
+    }
+  };
+
+  // Efecto para obtener el avatar del usuario
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      const avatar = await fetchUserAvatar();
+      console.log("Avatar: ", avatar);
+      setUserAvatar(avatar);
+    };
+    if (!userAvatar) {
+      fetchAvatar();
+    }
+  }, [userAvatar]);
 
   const username = userData?.username ? userData.username : "Invitado";
   const email = userData?.email ? userData.email : "Invitado@invitado.com";
-  const picture = userData?.picture ? userData.picture : "./ruta_invitado_avatar";
+  // const picture = userData?.picture ? userData.picture : "./ruta_invitado_avatar";
 
   // console.log("Valor de username: " + username);
   // console.log("Valor de email: " + email);
@@ -52,7 +75,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-11 w-11">
-            <AvatarImage src={picture} alt="@shadcn" />
+            <AvatarImage src={userAvatar} alt="@shadcn" />
             <AvatarFallback>USER</AvatarFallback>
           </Avatar>
         </Button>
