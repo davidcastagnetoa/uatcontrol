@@ -9,6 +9,8 @@ export const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
   const { authState } = useContext(AuthContext);
+
+  console.log("authState in DataContext: ", JSON.stringify(authState));
   const [userData, setUserData] = useState(null);
 
   // - Función para renovar el token de acceso
@@ -320,6 +322,14 @@ export const DataProvider = ({ children }) => {
       // Handle data with callback
       handleData(userData);
 
+      // Solo actualiza si los datos han cambiado
+      setUserData((prevUserData) => {
+        if (JSON.stringify(prevUserData) === JSON.stringify(userData)) {
+          return prevUserData; // No hay cambio, mantiene el estado anterior
+        }
+        return userData; // Hay nuevos datos, actualiza el estado
+      });
+
       return userData; // Devuelve el objeto
     } catch (error) {
       console.error("Error al obtener los datos del usuario: ", error);
@@ -331,16 +341,25 @@ export const DataProvider = ({ children }) => {
   const getUserData = async () => {
     return fetchUserData((userData) => {
       console.log("Datos de Usuario obtenidos en getUserData, contexto DataContext.js: ", userData);
+      // setUserData(userData); // Esto es crítico
     });
   };
 
   // * Actualiza los datos del usuario logado en el cliente
+  // const updateUserData = useCallback(() => {
+  //   fetchUserData((data) => {
+  //     setUserData(data); //! Actualiza el estado global del usuario
+  //     console.log("Datos de Usuario obtenidos y actualizados: ", data);
+  //   });
+  // }, [authState]);
+
+  // * Actualiza los datos del usuario logado en el cliente
   const updateUserData = useCallback(() => {
     fetchUserData((data) => {
-      setUserData(data); //! Actualiza el estado global del usuario
-      console.log("Datos de Usuario obtenidos y actualizados: ", data);
+      setUserData(data); // Actualiza el estado global del usuario
+      console.log("Datos de Usuario obtenidos y actualizados: ", userData);
     });
-  }, [authState]);
+  }, [authState.token, authState.refreshToken]); // Dependencias actualizadas para reflejar cuando realmente se necesita actualizar
 
   // * Actualiza y compriueba los datos del usuario logado en el contexto
   useEffect(() => {

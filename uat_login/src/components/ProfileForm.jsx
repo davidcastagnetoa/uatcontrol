@@ -41,6 +41,7 @@ const ProfileForm = () => {
   const handleGetUserData = useCallback(async () => {
     try {
       await getUserData();
+      console.log(getUserData());
       form.reset({
         username: userData?.username,
         email: userData?.email,
